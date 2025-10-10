@@ -1,0 +1,12 @@
+{
+  "routes": {
+    "/": {},
+    "/default": {},
+    "/default/master/branch": {},
+    "/default/master/company": {},
+    "/default/master/department": {},
+    "/default/master/role": {},
+    "/default/master/user": {},
+    "/login": {}
+  }
+}

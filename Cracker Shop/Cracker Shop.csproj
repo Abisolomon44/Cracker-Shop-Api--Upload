@@ -5,7 +5,19 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Cracker_Shop</RootNamespace>
+	  <AssemblyName>CrackerShop</AssemblyName>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Controllers\AuthenticationControllers\**" />
+    <Compile Remove="Models\AuthenticationModels\**" />
+    <Content Remove="Controllers\AuthenticationControllers\**" />
+    <Content Remove="Models\AuthenticationModels\**" />
+    <EmbeddedResource Remove="Controllers\AuthenticationControllers\**" />
+    <EmbeddedResource Remove="Models\AuthenticationModels\**" />
+    <None Remove="Controllers\AuthenticationControllers\**" />
+    <None Remove="Models\AuthenticationModels\**" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.66" />
@@ -19,8 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\AuthenticationControllers\" />
-    <Folder Include="Models\AuthenticationModels\" />
+    <Folder Include="wwwroot\" />
   </ItemGroup>
 
 </Project>

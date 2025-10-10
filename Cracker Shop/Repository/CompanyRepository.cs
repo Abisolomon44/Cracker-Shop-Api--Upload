@@ -2,6 +2,7 @@
 using Cracker_Shop.Models.CommonMasterModels;
 using Dapper;
 using System.Data;
+using System.Reflection;
 
 namespace Cracker_Shop.Repository
 {
@@ -23,7 +24,6 @@ namespace Cracker_Shop.Repository
 
             if (company.CompanyID == 0)
             {
-                // Generate code
                 company.CompanyCode = await CodeGenerator.GenerateNextCodeAsync(
                     _db, "CompanyMaster", "CompanyCode", "COM", 5
                 );
@@ -300,9 +300,94 @@ WHERE UserID=@UserID";
                 var sql = "SELECT * FROM UserMaster WHERE IsActive=1";
                 return await _db.QueryAsync<UserMaster>(sql);
             }
-        
-    
+
+        public async Task<long> SavePermissionAsync(UserRolePermission permission)
+        {
+            if (permission.ID == 0)
+            {
+                var sqlInsert = @"
+INSERT INTO UserModulePermission
+(UserID, RoleID, ModuleID, CreatedAt)
+VALUES
+(@UserID, @RoleID, @ModuleID, SYSDATETIME());
+SELECT CAST(SCOPE_IDENTITY() AS bigint);";
+
+                return await _db.ExecuteScalarAsync<long>(sqlInsert, permission);
+            }
+            else
+            {
+                var sqlUpdate = @"
+UPDATE UserModulePermission
+SET UserID=@UserID,
+    RoleID=@RoleID,
+    ModuleID=@ModuleID,
+    UpdatedAt=SYSDATETIME()
+WHERE ID=@ID";
+
+                await _db.ExecuteAsync(sqlUpdate, permission);
+                return permission.ID;
+            }
+        }
 
 
-}
+        public async Task DeletePermissionAsync(long id)
+        {
+            var sqlDelete = "DELETE FROM UserModulePermission WHERE ID=@ID";
+            await _db.ExecuteAsync(sqlDelete, new { ID = id });
+        }
+
+        public async Task<IEnumerable<UserRolePermission>> GetPermissionsByRoleAsync(int roleId)
+        {
+            var sql = "SELECT * FROM UserModulePermission WHERE RoleID=@RoleID";
+            return await _db.QueryAsync<UserRolePermission>(sql, new { RoleID = roleId });
+        }
+        public async Task<IEnumerable<ModuleDto>> GetModulesByUserAsync(int userId)
+        {
+            var sql = "SELECT ModuleID FROM UserModulePermission WHERE UserID=@UserID";
+            var userPerm = await _db.QueryFirstOrDefaultAsync<UserRolePermission>(sql, new { UserID = userId });
+
+            if (userPerm == null || string.IsNullOrEmpty(userPerm.ModuleID))
+                return new List<ModuleDto>();
+
+            var moduleIds = userPerm.ModuleID.Split(',').Select(id => int.Parse(id)).ToList();
+            var modulesSql = "SELECT * FROM Module WHERE ModuleID IN @Ids";
+            var modules = await _db.QueryAsync<ModuleDto>(modulesSql, new { Ids = moduleIds });
+
+            return modules;
+        }
+
+
+        public async Task<IEnumerable<ModuleDto>> GetAllModulesAsync()
+        {
+            var sql = "SELECT * FROM Module WHERE IsActive=1 ORDER BY Label";
+            return await _db.QueryAsync<ModuleDto>(sql);
+        }
+        public async Task<ModuleDto?> GetModuleByIdAsync(long moduleId)
+        {
+            var sql = "SELECT ModuleID, Label, Route, Icon, IsActive FROM Module WHERE ModuleID=@ModuleID";
+            return await _db.QueryFirstOrDefaultAsync<ModuleDto>(sql, new { ModuleID = moduleId });
+        }
+
+
+        public async Task<long> SaveModuleAsync(ModuleDto module)
+        {
+            if (module.ModuleID == 0)
+            {
+                var sqlInsert = @"
+INSERT INTO Module (Label, Route, Icon, IsActive)
+VALUES (@Label, @Route, @Icon, @IsActive);
+SELECT CAST(SCOPE_IDENTITY() AS bigint);";
+                return await _db.ExecuteScalarAsync<long>(sqlInsert, module);
+            }
+            else
+            {
+                var sqlUpdate = @"
+UPDATE Module
+SET Label=@Label, Route=@Route, Icon=@Icon, IsActive=@IsActive
+WHERE ModuleID=@ModuleID";
+                await _db.ExecuteAsync(sqlUpdate, module);
+                return module.ModuleID;
+            }
+        }
+    }
 }

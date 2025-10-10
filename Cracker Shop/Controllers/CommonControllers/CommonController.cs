@@ -236,17 +236,101 @@ namespace Cracker_Shop.Controllers.CommonControllers
             return Ok(users);
         }
 
+        [HttpPost("SavePermission")]
+        public async Task<IActionResult> SavePermission([FromBody] UserRolePermission permission)
+        {
+            if (permission == null) return BadRequest("Permission data is required.");
+            if (string.IsNullOrWhiteSpace(permission.ModuleID)) return BadRequest("PermissionName is required.");
+
+            try
+            {
+                var id = await _repo.SavePermissionAsync(permission);
+                return Ok(new
+                {
+                    Message = "Permission saved successfully.",
+                    PermissionID = id
+                });
+            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            catch (Exception ex) { return StatusCode(500, $"Internal server error: {ex.Message}"); }
+        }
+
+        [HttpDelete("DeletePermission/{id}")]
+        public async Task<IActionResult> DeletePermission(long id)
+        {
+            try
+            {
+                await _repo.DeletePermissionAsync(id);
+                return Ok(new { Message = "Permission deleted successfully." });
+            }
+            catch (Exception ex) { return StatusCode(500, $"Internal server error: {ex.Message}"); }
+        }
+
+        [HttpGet("GetPermissionsByRole/{roleId}")]
+        public async Task<IActionResult> GetPermissionsByRole(int roleId)
+        {
+            var permissions = await _repo.GetPermissionsByRoleAsync(roleId);
+            return Ok(permissions);
+        }
+
+        [HttpGet("GetPermissionsByUser/{userId}")]
+        public async Task<IActionResult> GetPermissionsByUser(int userId)
+        {
+            var permissions = await _repo.GetModulesByUserAsync(userId);
+            return Ok(permissions);
+        }
+    
+
+
+
+
+            // GET: api/Module/GetAllModules
+            [HttpGet("GetAllModules")]
+            public async Task<IActionResult> GetAllModules()
+            {
+                var modules = await _repo.GetAllModulesAsync();
+                return Ok(modules);
+            }
+
+            [HttpGet("GetModuleById/{id}")]
+            public async Task<IActionResult> GetModuleById(long id)
+            {
+                var module = await _repo.GetModuleByIdAsync(id);
+                if (module == null) return NotFound();
+                return Ok(module);
+            }
+
+            // POST: api/Module/SaveModule
+            [HttpPost("SaveModule")]
+            public async Task<IActionResult> SaveModule([FromBody] ModuleDto module)
+            {
+                if (module == null) return BadRequest("Module data is required.");
+                if (string.IsNullOrWhiteSpace(module.Label)) return BadRequest("Module Label is required.");
+
+                try
+                {
+                    var id = await _repo.SaveModuleAsync(module);
+                    return Ok(new
+                    {
+                        Message = "Module saved successfully.",
+                        ModuleID = id
+                    });
+                }
+                catch (ArgumentException ex)
+                {
+                    return BadRequest(ex.Message);
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, $"Internal server error: {ex.Message}");
+                }
+            }
 
 
 
 
 
-
-
-
-
-
-    }
+        }
 
 
 

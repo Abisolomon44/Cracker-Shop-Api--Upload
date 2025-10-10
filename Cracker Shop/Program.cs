@@ -5,15 +5,12 @@ using Cracker_Shop.DependencyInjection;
 var builder = WebApplication.CreateBuilder(args);
 
 
-builder.Services.AddControllers();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 
 builder.Services.AddCommonRepositories(
     builder.Configuration.GetConnectionString("DefaultConnection")!
@@ -23,37 +20,43 @@ builder.Services.AddCommonRepositories(
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAngularClient",
-        policy =>
-        {
-            policy.WithOrigins("http://localhost:4200") // Angular app URL
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
-        });
+    options.AddPolicy("AllowAll",
+        b => b.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader());
 });
 
 
-
-
-
-
-
-
 var app = builder.Build();
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseRouting();
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
-
 {
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    app.UseSwagger();      // If you want Swagger in prod, keep this
+    app.UseSwaggerUI();
+}
+
 
 app.UseHttpsRedirection();
+app.UseDefaultFiles();  
+app.UseStaticFiles();
+app.UseRouting();
+
+app.UseCors("AllowAll");
 
 app.UseAuthorization();
-
 app.MapControllers();
-app.UseCors("AllowAngularClient");
+app.MapFallbackToFile("index.html");
+
 
 app.Run();

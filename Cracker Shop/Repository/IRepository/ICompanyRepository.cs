@@ -1,4 +1,5 @@
 ﻿using Cracker_Shop.Models.CommonMasterModels;
+using System.Reflection;
 
 public interface ICompanyRepository
 {
@@ -19,4 +20,19 @@ public interface ICompanyRepository
 
     Task<long> SaveUserAsync(UserMaster user);
     Task<IEnumerable<UserMaster>> GetAllUsersAsync();
-}
+
+    Task<long> SavePermissionAsync(UserRolePermission permission);
+
+    Task DeletePermissionAsync(long permissionId);
+
+    Task<IEnumerable<UserRolePermission>> GetPermissionsByRoleAsync(int roleId);
+
+    Task<IEnumerable<ModuleDto>> GetModulesByUserAsync(int userId);
+    Task<IEnumerable<ModuleDto>> GetAllModulesAsync();
+    Task<ModuleDto?> GetModuleByIdAsync(long moduleId);
+    Task<long> SaveModuleAsync(ModuleDto module);
+
+
+
+
+        }
