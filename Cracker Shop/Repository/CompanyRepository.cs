@@ -165,7 +165,7 @@ WHERE BranchID=@BranchID
 
             if (department.DepartmentID == 0)
             {
-                // Generate DepartmentCode
+                // Generate DepartmentCod
                 department.DepartmentCode = await CodeGenerator.GenerateNextCodeAsync(
                     _db, "DepartmentMaster", "DepartmentCode", "DEP", 5
                 );
@@ -181,14 +181,12 @@ SELECT CAST(SCOPE_IDENTITY() AS bigint);
             }
             else if (!department.IsActive)
             {
-                // Soft delete
                 var sqlDelete = "UPDATE DepartmentMaster SET IsActive=0, UpdatedAt=SYSDATETIME() WHERE DepartmentID=@DepartmentID";
                 await _db.ExecuteAsync(sqlDelete, new { department.DepartmentID });
                 return department.DepartmentID;
             }
             else
             {
-                // Update
                 var sqlUpdate = @"
 UPDATE DepartmentMaster
 SET 
@@ -303,8 +301,29 @@ WHERE UserID=@UserID";
 
         public async Task<long> SavePermissionAsync(UserRolePermission permission)
         {
-            if (permission.ID == 0)
+            // Check if a row already exists for this user
+            var existing = await _db.QueryFirstOrDefaultAsync<long?>(
+                "SELECT ID FROM UserModulePermission WHERE UserID=@UserID",
+                new { permission.UserID }
+            );
+
+            if (existing.HasValue)
             {
+                // Update existing row
+                var sqlUpdate = @"
+UPDATE UserModulePermission
+SET ModuleID=@ModuleID,
+    RoleID=@RoleID,
+    UpdatedAt=SYSDATETIME()
+WHERE ID=@ID";
+
+                permission.ID = existing.Value;
+                await _db.ExecuteAsync(sqlUpdate, permission);
+                return permission.ID;
+            }
+            else
+            {
+                // Insert new row
                 var sqlInsert = @"
 INSERT INTO UserModulePermission
 (UserID, RoleID, ModuleID, CreatedAt)
@@ -313,19 +332,6 @@ VALUES
 SELECT CAST(SCOPE_IDENTITY() AS bigint);";
 
                 return await _db.ExecuteScalarAsync<long>(sqlInsert, permission);
-            }
-            else
-            {
-                var sqlUpdate = @"
-UPDATE UserModulePermission
-SET UserID=@UserID,
-    RoleID=@RoleID,
-    ModuleID=@ModuleID,
-    UpdatedAt=SYSDATETIME()
-WHERE ID=@ID";
-
-                await _db.ExecuteAsync(sqlUpdate, permission);
-                return permission.ID;
             }
         }
 

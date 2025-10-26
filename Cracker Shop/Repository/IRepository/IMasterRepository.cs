@@ -14,6 +14,9 @@ namespace Cracker_Shop.Repository.IRepository
 
         Task<long> SaveCessAsync(CessMaster cess);
         Task<IEnumerable<CessMaster>> GetActiveCessAsync();
+        Task<List<ProductMaster>> GetAllProductsAsync();
+
+
 
         Task<long> SaveCustomerAsync(CustomerMaster customer);
         Task<IEnumerable<CustomerMaster>> GetActiveCustomersAsync();

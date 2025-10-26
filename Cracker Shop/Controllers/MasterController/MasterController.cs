@@ -72,6 +72,56 @@ namespace Cracker_Shop.Controllers.MasterController
             }
             catch (Exception ex) { return ResponseMessage(false, ex.Message); }
         }
+        [HttpPost("Cess")]
+        public async Task<IActionResult> SaveCess([FromBody] CessMaster cess)
+        {
+            if (cess == null)
+                return BadRequest("Cess data is required.");
+
+            try
+            {
+                var id = await _repo.SaveCessAsync(cess);
+                string msg = GetActionMessage(cess.IsActive, id, cess.CessID, "Cess");
+                return ResponseMessage(true, msg, new { CessID = id });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return ResponseMessage(false, ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return ResponseMessage(false, "An error occurred: " + ex.Message);
+            }
+        }
+
+        [HttpGet("Cesses")]
+        public async Task<IActionResult> GetCesses()
+        {
+            var result = await _repo.GetActiveCessAsync();
+            return Ok(result);
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         [HttpGet("Categories")]
         public async Task<IActionResult> GetCategories() =>
@@ -117,6 +167,15 @@ namespace Cracker_Shop.Controllers.MasterController
         [HttpGet("Products/{companyId}")]
         public async Task<IActionResult> GetProducts(long companyId) =>
             Ok(await _repo.GetActiveProductsAsync(companyId));
+
+
+        [HttpGet("GetProducts")]
+        public async Task<IActionResult> GetAllProducts()
+        {
+            var products = await _repo.GetAllProductsAsync();
+            return Ok(products); 
+        }
+
 
         // ================= Supplier =================
         [HttpPost("Supplier")]

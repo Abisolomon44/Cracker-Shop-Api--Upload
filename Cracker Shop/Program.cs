@@ -40,14 +40,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-else
-{
-    app.UseSwagger();      // If you want Swagger in prod, keep this
-    app.UseSwaggerUI();
-}
 
 
-app.UseHttpsRedirection();
+
 app.UseDefaultFiles();  
 app.UseStaticFiles();
 app.UseRouting();

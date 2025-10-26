@@ -2,6 +2,7 @@
 using Cracker_Shop.Models.MasterModels;
 using Cracker_Shop.Repository.IRepository;
 using Dapper;
+using Microsoft.EntityFrameworkCore;
 using System.Data;
 using System.Text.RegularExpressions;
 
@@ -167,10 +168,8 @@ WHERE REPLACE(UPPER(LTRIM(RTRIM(BrandName))), ' ', '') = REPLACE(UPPER(LTRIM(RTR
             if (string.IsNullOrWhiteSpace(cess.CessName))
                 throw new ArgumentException("CessName is required.");
 
-            // Normalize CessName
             cess.CessName = System.Text.RegularExpressions.Regex.Replace(cess.CessName.Trim(), @"\s+", " ");
 
-            // Duplicate check
             var duplicateSql = @"
         SELECT COUNT(1)
         FROM CessMaster
@@ -236,11 +235,6 @@ WHERE REPLACE(UPPER(LTRIM(RTRIM(BrandName))), ' ', '') = REPLACE(UPPER(LTRIM(RTR
 
             return await _db.QueryAsync<CessMaster>(sql);
         }
-
-
-
-
-
 
 
 
@@ -524,6 +518,13 @@ WHERE REPLACE(UPPER(LTRIM(RTRIM(BrandName))), ' ', '') = REPLACE(UPPER(LTRIM(RTR
             }
 
             return image.ProductImageID;
+        }
+        public async Task<List<ProductMaster>> GetAllProductsAsync()
+        {
+            var sql = @"
+        SELECT *
+        FROM ProductMaster";
+            return (await _db.QueryAsync<ProductMaster>(sql)).ToList();
         }
 
         public async Task<IEnumerable<ProductImageMaster>> GetActiveProductImagesAsync(long productId)
