@@ -537,16 +537,22 @@ WHERE REPLACE(UPPER(LTRIM(RTRIM(BrandName))), ' ', '') = REPLACE(UPPER(LTRIM(RTR
 
             return await _db.QueryAsync<ProductImageMaster>(sql, new { ProductID = productId });
         }
-        // ProductMaster Methods
         public async Task<long> SaveProductAsync(ProductMaster product)
         {
             if (string.IsNullOrWhiteSpace(product.ProductName))
-                throw new ArgumentException("ProductName is required.");
+                throw new ArgumentException("Product name is required.");
 
+            // Clean up product name
             product.ProductName = System.Text.RegularExpressions.Regex.Replace(product.ProductName.Trim(), @"\s+", " ");
 
-            // Duplicate check on ProductName for the same Company
-            var duplicateSql = @"
+            // 🔹 Validate required fields (BranchID, CompanyID)
+            if (product.CompanyID <= 0)
+                throw new ArgumentException("CompanyID is required.");
+            if (product.BranchID <= 0)
+                throw new ArgumentException("BranchID is required.");
+
+            // 🔹 Check for duplicates
+            const string duplicateSql = @"
         SELECT COUNT(1)
         FROM ProductMaster
         WHERE LTRIM(RTRIM(UPPER(ProductName))) = UPPER(@ProductName)
@@ -554,53 +560,106 @@ WHERE REPLACE(UPPER(LTRIM(RTRIM(BrandName))), ' ', '') = REPLACE(UPPER(LTRIM(RTR
           AND CompanyID = @CompanyID
           AND IsActive = 1";
 
-            var count = await _db.ExecuteScalarAsync<int>(duplicateSql, new { product.ProductName, product.ProductID, product.CompanyID });
-            if (count > 0) throw new InvalidOperationException("A product with the same name already exists.");
+            var count = await _db.ExecuteScalarAsync<int>(duplicateSql, new
+            {
+                product.ProductName,
+                product.ProductID,
+                product.CompanyID
+            });
 
+            if (count > 0)
+                throw new InvalidOperationException("A product with the same name already exists.");
+
+            // ✅ INSERT NEW PRODUCT
             if (product.ProductID == 0)
             {
-                // Generate ProductCode like PRD00001
-                product.ProductCode = await CodeGenerator.GenerateNextCodeAsync(_db, "ProductMaster", "ProductCode", "PRD", 5);
+                // Generate Product Code
+                product.ProductCode = await CodeGenerator.GenerateNextCodeAsync(
+                    _db, "ProductMaster", "ProductCode", "PRD", 5
+                );
 
-                var sqlInsert = @"
+                const string sqlInsert = @"
             INSERT INTO ProductMaster
             (ProductCode, ProductName, CategoryID, SubCategoryID, BrandID, UnitID, HSNID, TaxID, CessID,
              PurchaseRate, RetailPrice, WholesalePrice, SaleRate, MRP, IsActive, CreatedByUserID, CreatedSystemName, CreatedAt,
-             DiscountAmount, DiscountPercentage, OpeningStock, ReorderLevel, CurrentStock, Barcode, IsService, ProductDescription, ProductImage, CompanyID)
+             DiscountAmount, DiscountPercentage, OpeningStock, ReorderLevel, CurrentStock, Barcode, IsService, ProductDescription, ProductImage,
+             CompanyID, BranchID, Color, Size, Weight, Volume, Material, FinishType, ShadeCode, Capacity, ModelNumber, ExpiryDate,
+             SecondaryUnitID, TaxType, IsGSTInclusive, TaxableValue, CGSTRate, CGSTAmount, SGSTRate, SGSTAmount,
+             IGSTRate, IGSTAmount, CESSRate, CESSAmount)
             VALUES
             (@ProductCode, @ProductName, @CategoryID, @SubCategoryID, @BrandID, @UnitID, @HSNID, @TaxID, @CessID,
              @PurchaseRate, @RetailPrice, @WholesalePrice, @SaleRate, @MRP, @IsActive, @CreatedByUserID, @CreatedSystemName, SYSDATETIME(),
-             @DiscountAmount, @DiscountPercentage, @OpeningStock, @ReorderLevel, @CurrentStock, @Barcode, @IsService, @ProductDescription, @ProductImage, @CompanyID);
+             @DiscountAmount, @DiscountPercentage, @OpeningStock, @ReorderLevel, @CurrentStock, @Barcode, @IsService, @ProductDescription, @ProductImage,
+             @CompanyID, @BranchID, @Color, @Size, @Weight, @Volume, @Material, @FinishType, @ShadeCode, @Capacity, @ModelNumber, @ExpiryDate,
+             @SecondaryUnitID, @TaxType, @IsGSTInclusive, @TaxableValue, @CGSTRate, @CGSTAmount, @SGSTRate, @SGSTAmount,
+             @IGSTRate, @IGSTAmount, @CESSRate, @CESSAmount);
+
             SELECT CAST(SCOPE_IDENTITY() AS BIGINT);";
 
                 return await _db.ExecuteScalarAsync<long>(sqlInsert, product);
             }
 
+            // ✅ SOFT DELETE (Deactivate product)
             if (!product.IsActive)
             {
-                await _db.ExecuteAsync(@"
+                const string sqlDeactivate = @"
             UPDATE ProductMaster
-            SET IsActive=0, UpdatedByUserID=@UpdatedByUserID, UpdatedSystemName=@UpdatedSystemName, UpdatedAt=SYSDATETIME()
-            WHERE ProductID=@ProductID", product);
-            }
-            else
-            {
-                var sqlUpdate = @"
-            UPDATE ProductMaster SET
-                ProductName=@ProductName, CategoryID=@CategoryID, SubCategoryID=@SubCategoryID, BrandID=@BrandID, UnitID=@UnitID,
-                HSNID=@HSNID, TaxID=@TaxID, CessID=@CessID,
-                PurchaseRate=@PurchaseRate, RetailPrice=@RetailPrice, WholesalePrice=@WholesalePrice, SaleRate=@SaleRate, MRP=@MRP,
-                DiscountAmount=@DiscountAmount, DiscountPercentage=@DiscountPercentage,
-                OpeningStock=@OpeningStock, ReorderLevel=@ReorderLevel, CurrentStock=@CurrentStock,
-                Barcode=@Barcode, IsService=@IsService, ProductDescription=@ProductDescription, ProductImage=@ProductImage,
-                IsActive=@IsActive, UpdatedByUserID=@UpdatedByUserID, UpdatedSystemName=@UpdatedSystemName, UpdatedAt=SYSDATETIME()
-            WHERE ProductID=@ProductID";
+            SET IsActive = 0,
+                UpdatedByUserID = @UpdatedByUserID,
+                UpdatedSystemName = @UpdatedSystemName,
+                UpdatedAt = SYSDATETIME()
+            WHERE ProductID = @ProductID";
 
-                await _db.ExecuteAsync(sqlUpdate, product);
+                await _db.ExecuteAsync(sqlDeactivate, product);
+                return product.ProductID;
             }
 
+            // ✅ UPDATE EXISTING PRODUCT
+            const string sqlUpdate = @"
+        UPDATE ProductMaster SET
+            ProductName=@ProductName,
+            CategoryID=@CategoryID, SubCategoryID=@SubCategoryID, BrandID=@BrandID, UnitID=@UnitID,
+            HSNID=@HSNID, TaxID=@TaxID, CessID=@CessID,
+            PurchaseRate=@PurchaseRate, RetailPrice=@RetailPrice, WholesalePrice=@WholesalePrice,
+            SaleRate=@SaleRate, MRP=@MRP,
+            DiscountAmount=@DiscountAmount, DiscountPercentage=@DiscountPercentage,
+            OpeningStock=@OpeningStock, ReorderLevel=@ReorderLevel, CurrentStock=@CurrentStock,
+            Barcode=@Barcode, IsService=@IsService, ProductDescription=@ProductDescription, ProductImage=@ProductImage,
+            CompanyID=@CompanyID, BranchID=@BranchID,
+            Color=@Color, Size=@Size, Weight=@Weight, Volume=@Volume, Material=@Material,
+            FinishType=@FinishType, ShadeCode=@ShadeCode, Capacity=@Capacity, ModelNumber=@ModelNumber, ExpiryDate=@ExpiryDate,
+            SecondaryUnitID=@SecondaryUnitID, TaxType=@TaxType, IsGSTInclusive=@IsGSTInclusive, TaxableValue=@TaxableValue,
+            CGSTRate=@CGSTRate, CGSTAmount=@CGSTAmount, SGSTRate=@SGSTRate, SGSTAmount=@SGSTAmount,
+            IGSTRate=@IGSTRate, IGSTAmount=@IGSTAmount, CESSRate=@CESSRate, CESSAmount=@CESSAmount,
+            UpdatedByUserID=@UpdatedByUserID, UpdatedSystemName=@UpdatedSystemName, UpdatedAt=SYSDATETIME()
+        WHERE ProductID=@ProductID";
+
+            await _db.ExecuteAsync(sqlUpdate, product);
             return product.ProductID;
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         public async Task<IEnumerable<ProductMaster>> GetActiveProductsAsync(long companyId)
         {

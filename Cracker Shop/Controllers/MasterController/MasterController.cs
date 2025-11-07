@@ -1,6 +1,7 @@
 ﻿using Cracker_Shop.Models.MasterModels;
 using Cracker_Shop.Repository.IRepository;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Cracker_Shop.Controllers.MasterController
 {
@@ -9,11 +10,14 @@ namespace Cracker_Shop.Controllers.MasterController
     public class MasterController : ControllerBase
     {
         private readonly IMasterRepository _repo;
+        private readonly ICompanyRepository _companyrepo;
+
 
         public MasterController(IMasterRepository repo)
         {
             _repo = repo;
         }
+
 
         // ---------- Helper to generate Add/Update/Delete message ----------
         private string GetActionMessage(bool isActive, long id, long requestId, string entity)
@@ -54,6 +58,7 @@ namespace Cracker_Shop.Controllers.MasterController
             }
         }
 
+   
         [HttpGet("Brands")]
         public async Task<IActionResult> GetBrands() =>
             Ok(await _repo.GetActiveBrands());
