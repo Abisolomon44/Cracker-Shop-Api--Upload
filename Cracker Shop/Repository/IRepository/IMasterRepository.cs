@@ -8,15 +8,12 @@ namespace Cracker_Shop.Repository.IRepository
         Task<long> AddUpdateDelete(BrandMaster brand);
         Task<IEnumerable<BrandMaster>> GetActiveBrands();
 
-
         Task<long> SaveCategoryAsync(CategoryMaster category);
         Task<IEnumerable<CategoryMaster>> GetActiveCategoriesAsync();
 
         Task<long> SaveCessAsync(CessMaster cess);
         Task<IEnumerable<CessMaster>> GetActiveCessAsync();
         Task<List<ProductMaster>> GetAllProductsAsync();
-
-
 
         Task<long> SaveCustomerAsync(CustomerMaster customer);
         Task<IEnumerable<CustomerMaster>> GetActiveCustomersAsync();
