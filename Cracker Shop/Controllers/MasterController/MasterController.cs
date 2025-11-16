@@ -40,6 +40,12 @@ namespace Cracker_Shop.Controllers.MasterController
             });
         }
 
+
+
+        [HttpGet("Status")]
+        public async Task<IActionResult> GetStatus() =>
+            Ok(await _repo.GetActiveStatuses());
+
         // ================= Brand =================
         [HttpPost("Brand")]
         public async Task<IActionResult> SaveBrand([FromBody] BrandMaster brand)

@@ -5,6 +5,8 @@ namespace Cracker_Shop.Repository.IRepository
 {
     public interface IMasterRepository
     {
+        Task<IEnumerable<Status>> GetActiveStatuses();
+
         Task<long> AddUpdateDelete(BrandMaster brand);
         Task<IEnumerable<BrandMaster>> GetActiveBrands();
 

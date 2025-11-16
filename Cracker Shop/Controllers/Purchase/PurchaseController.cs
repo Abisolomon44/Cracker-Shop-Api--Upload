@@ -99,5 +99,20 @@ namespace Cracker_Shop.Controllers.Purchase
                 return ResponseMessage(false, ex.Message);
             }
         }
+
+        [HttpGet("GetPurchaseOrder")]
+        public async Task<IActionResult> GetPurchaseOrders(
+    int? poid = null,
+    int? companyId = null,
+    int? branchId = null,
+    int? supplierId = null,
+    DateTime? poDate = null)
+        {
+            var result = await _purchaseRepo.GetPurchaseOrdersAsync(
+                poid, companyId, branchId, supplierId, poDate);
+
+            return Ok(result);
+        }
+
     }
 }

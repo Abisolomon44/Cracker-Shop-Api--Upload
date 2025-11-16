@@ -17,10 +17,6 @@ namespace Cracker_Shop.Repository
         {
             _db = db;
         }
-
-        // -------------------------------------------------------
-        // PURCHASE ORDER ADD / UPDATE / DELETE
-        // -------------------------------------------------------
         public async Task<long> AddUpDateDeletePurchaseOrderAsync(PurchaseOrderEntry po)
         {
             if (po == null)
@@ -28,117 +24,159 @@ namespace Cracker_Shop.Repository
 
             if (po.CompanyID == null || po.CompanyID <= 0)
                 throw new ArgumentException("CompanyID is required.");
+
             if (po.SupplierID == null || po.SupplierID <= 0)
                 throw new ArgumentException("SupplierID is required.");
 
+            // Trim PO Number
             po.PONumber = po.PONumber?.Trim();
 
+            // ⭐ Generate PO number BEFORE starting transaction
+            if ((po.POID == 0 || po.POID == null) && string.IsNullOrWhiteSpace(po.PONumber))
+            {
+                po.PONumber = await CodeGenerator.GenerateNextCodeAsync(
+                    _db, "PurchaseOrderEntry", "PONumber", "PO", 5
+                );
+            }
+
             if (_db.State == ConnectionState.Closed)
-                _db.Open(); // ✅ Ensure connection is open
+                _db.Open();
 
             using (var transaction = _db.BeginTransaction())
             {
                 try
                 {
+                    // ---------------------------------------------
+                    // 1) DUPLICATE CHECK
+                    // ---------------------------------------------
                     const string duplicateSql = @"
-                        SELECT COUNT(1)
-                        FROM PurchaseOrderEntry
-                        WHERE LTRIM(RTRIM(UPPER(PONumber))) = UPPER(@PONumber)
-                          AND (@POID = 0 OR POID <> @POID)
-                          AND CompanyID = @CompanyID
-                          AND BranchID = @BranchID
-                          AND IsActive = 1";
+                SELECT COUNT(1)
+                FROM PurchaseOrderEntry
+                WHERE LTRIM(RTRIM(UPPER(PONumber))) = UPPER(@PONumber)
+                  AND (@POID = 0 OR POID <> @POID)
+                  AND CompanyID = @CompanyID
+                  AND BranchID = @BranchID
+                  AND IsActive = 1";
 
-                    var dupCount = await _db.ExecuteScalarAsync<int>(duplicateSql, new
-                    {
-                        po.PONumber,
-                        po.POID,
-                        po.CompanyID,
-                        po.BranchID
-                    }, transaction);
+                    var dupCount = await _db.ExecuteScalarAsync<int>(duplicateSql,
+                        new
+                        {
+                            po.PONumber,
+                            po.POID,
+                            po.CompanyID,
+                            po.BranchID
+                        }, transaction);
 
                     if (dupCount > 0)
                         throw new InvalidOperationException("A purchase order with the same number already exists.");
 
+                    // ---------------------------------------------
+                    // 2) LOAD LOOKUP NAMES (IMPORTANT)
+                    // ---------------------------------------------
+                    po.CompanyName = await _db.ExecuteScalarAsync<string>(
+                        "SELECT CompanyName FROM CompanyMaster WHERE CompanyID = @CompanyID",
+                        new { po.CompanyID }, transaction);
+
+                    po.BranchName = await _db.ExecuteScalarAsync<string>(
+                        "SELECT BranchName FROM BranchMaster WHERE BranchID = @BranchID",
+                        new { po.BranchID }, transaction);
+
+                    po.SupplierName = await _db.ExecuteScalarAsync<string>(
+                        "SELECT SupplierName FROM SupplierMaster WHERE SupplierID = @SupplierID",
+                        new { po.SupplierID }, transaction);
+
+                    po.StatusName = await _db.ExecuteScalarAsync<string>(
+                        "SELECT StatusName FROM StatusMaster WHERE StatusID = @StatusID",
+                        new { po.StatusID }, transaction);
+
+                    po.ProductCategoryName = await _db.ExecuteScalarAsync<string>(
+                        "SELECT CategoryName FROM CategoryMaster WHERE CategoryID = @ProductCategoryId",
+                        new { po.ProductCategoryId }, transaction);
+
+                    po.ProductSubCategoryName = await _db.ExecuteScalarAsync<string>(
+                        "SELECT SubCategoryName FROM SubCategoryMaster WHERE SubCategoryID = @ProductSubCategory",
+                        new { po.ProductSubCategory }, transaction);
+
+
                     long resultId;
 
-                    // INSERT
+                    // ---------------------------------------------
+                    // 3) INSERT
+                    // ---------------------------------------------
                     if (po.POID == 0 || po.POID == null)
                     {
-                        if (string.IsNullOrWhiteSpace(po.PONumber))
-                        {
-                            po.PONumber = await CodeGenerator.GenerateNextCodeAsync(
-                                _db, "PurchaseOrderEntry", "PONumber", "PO", 5
-                            );
-                        }
-
                         const string sqlInsert = @"
-                            INSERT INTO PurchaseOrderEntry
-                            (CompanyID, CompanyName, BranchID, BranchName, PONumber, PODate,
-                             SupplierID, SupplierName, StatusID, StatusName, TotalAmount, PORemarks,
-                             ProductID, ProductCode, ProductName, ProductCategoryId, ProductCategoryName,
-                             ProductSubCategory, ProductSubCategoryName, PORate, OrderedQty, ApprovedQty,
-                             ExpectedDeliveryDate, ProductRemarks, IsActive, CreatedByUserID, CreatedSystemName,
-                             CreatedAt, AccountingYear)
-                            VALUES
-                            (@CompanyID, @CompanyName, @BranchID, @BranchName, @PONumber, @PODate,
-                             @SupplierID, @SupplierName, @StatusID, @StatusName, @TotalAmount, @PORemarks,
-                             @ProductID, @ProductCode, @ProductName, @ProductCategoryId, @ProductCategoryName,
-                             @ProductSubCategory, @ProductSubCategoryName, @PORate, @OrderedQty, @ApprovedQty,
-                             @ExpectedDeliveryDate, @ProductRemarks, 1, @CreatedByUserID, @CreatedSystemName,
-                             SYSDATETIME(), @AccountingYear);
-                            SELECT CAST(SCOPE_IDENTITY() AS BIGINT);";
+                    INSERT INTO PurchaseOrderEntry
+                    (CompanyID, CompanyName, BranchID, BranchName, PONumber, PODate,
+                     SupplierID, SupplierName, StatusID, StatusName, TotalAmount, PORemarks,
+                     ProductID, ProductCode, ProductName, ProductCategoryId, ProductCategoryName,
+                     ProductSubCategory, ProductSubCategoryName, PORate, OrderedQty, ApprovedQty,
+                     ExpectedDeliveryDate, ProductRemarks, IsActive, CreatedByUserID, CreatedSystemName,
+                     CreatedAt, AccountingYear)
+                    VALUES
+                    (@CompanyID, @CompanyName, @BranchID, @BranchName, @PONumber, @PODate,
+                     @SupplierID, @SupplierName, @StatusID, @StatusName, @TotalAmount, @PORemarks,
+                     @ProductID, @ProductCode, @ProductName, @ProductCategoryId, @ProductCategoryName,
+                     @ProductSubCategory, @ProductSubCategoryName, @PORate, @OrderedQty, @ApprovedQty,
+                     @ExpectedDeliveryDate, @ProductRemarks, 1, @CreatedByUserID, @CreatedSystemName,
+                     SYSDATETIME(), @AccountingYear);
+
+                    SELECT CAST(SCOPE_IDENTITY() AS BIGINT);";
 
                         resultId = await _db.ExecuteScalarAsync<long>(sqlInsert, po, transaction);
                     }
-                    // DELETE / DEACTIVATE
                     else if (po.IsActive == false)
                     {
+                        // ---------------------------------------------
+                        // 4) DELETE  (DEACTIVATE)
+                        // ---------------------------------------------
                         const string sqlDeactivate = @"
-                            UPDATE PurchaseOrderEntry
-                            SET IsActive = 0,
-                                CancelledDate = SYSDATETIME(),
-                                CancelledBy = @CancelledBy,
-                                CancelReason = @CancelReason,
-                                UpdatedByUserID = @UpdatedByUserID,
-                                UpdatedSystemName = @UpdatedSystemName,
-                                UpdatedAt = SYSDATETIME()
-                            WHERE POID = @POID";
+                    UPDATE PurchaseOrderEntry SET
+                        IsActive = 0,
+                        CancelledDate = SYSDATETIME(),
+                        CancelledBy = @CancelledBy,
+                        CancelReason = @CancelReason,
+                        UpdatedByUserID = @UpdatedByUserID,
+                        UpdatedSystemName = @UpdatedSystemName,
+                        UpdatedAt = SYSDATETIME()
+                    WHERE POID = @POID";
 
                         await _db.ExecuteAsync(sqlDeactivate, po, transaction);
                         resultId = po.POID ?? 0;
                     }
-                    // UPDATE
                     else
                     {
+                        // ---------------------------------------------
+                        // 5) UPDATE
+                        // ---------------------------------------------
                         const string sqlUpdate = @"
-                            UPDATE PurchaseOrderEntry SET
-                                CompanyID = @CompanyID,
-                                CompanyName = @CompanyName,
-                                BranchID = @BranchID,
-                                BranchName = @BranchName,
-                                SupplierID = @SupplierID,
-                                SupplierName = @SupplierName,
-                                StatusID = @StatusID,
-                                StatusName = @StatusName,
-                                TotalAmount = @TotalAmount,
-                                PORemarks = @PORemarks,
-                                ProductID = @ProductID,
-                                ProductCode = @ProductCode,
-                                ProductName = @ProductName,
-                                ProductCategoryId = @ProductCategoryId,
-                                ProductCategoryName = @ProductCategoryName,
-                                ProductSubCategory = @ProductSubCategory,
-                                ProductSubCategoryName = @ProductSubCategoryName,
-                                PORate = @PORate,
-                                OrderedQty = @OrderedQty,
-                                ApprovedQty = @ApprovedQty,
-                                ExpectedDeliveryDate = @ExpectedDeliveryDate,
-                                ProductRemarks = @ProductRemarks,
-                                UpdatedByUserID = @UpdatedByUserID,
-                                UpdatedSystemName = @UpdatedSystemName,
-                                UpdatedAt = SYSDATETIME()
-                            WHERE POID = @POID";
+                    UPDATE PurchaseOrderEntry SET
+                        CompanyID = @CompanyID,
+                        CompanyName = @CompanyName,
+                        BranchID = @BranchID,
+                        BranchName = @BranchName,
+                        SupplierID = @SupplierID,
+                        SupplierName = @SupplierName,
+                        StatusID = @StatusID,
+                        StatusName = @StatusName,
+                        TotalAmount = @TotalAmount,
+                        PORemarks = @PORemarks,
+                        ProductID = @ProductID,
+                        ProductCode = @ProductCode,
+                        ProductName = @ProductName,
+                        ProductCategoryId = @ProductCategoryId,
+                        ProductCategoryName = @ProductCategoryName,
+                        ProductSubCategory = @ProductSubCategory,
+                        ProductSubCategoryName = @ProductSubCategoryName,
+                        PORate = @PORate,
+                        OrderedQty = @OrderedQty,
+                        ApprovedQty = @ApprovedQty,
+                        ExpectedDeliveryDate = @ExpectedDeliveryDate,
+                        ProductRemarks = @ProductRemarks,
+                        UpdatedByUserID = @UpdatedByUserID,
+                        UpdatedSystemName = @UpdatedSystemName,
+                        UpdatedAt = SYSDATETIME()
+                    WHERE POID = @POID";
 
                         await _db.ExecuteAsync(sqlUpdate, po, transaction);
                         resultId = po.POID ?? 0;
@@ -314,7 +352,7 @@ namespace Cracker_Shop.Repository
                 {
                     foreach (var entry in entries)
                     {
-                        if (entry.CompanyID == null )
+                        if (entry.CompanyID == null)
                             throw new ArgumentException("CompanyID  are required.");
                         if (string.IsNullOrWhiteSpace(entry.ProductName))
                             throw new ArgumentException("ProductName is required.");
@@ -515,5 +553,33 @@ namespace Cracker_Shop.Repository
 
             return lastPurchaseId;
         }
+
+        public async Task<IEnumerable<PurchaseOrderEntry>> GetPurchaseOrdersAsync(
+        int? poid = null,
+        int? companyId = null,
+        int? branchId = null,
+        int? supplierId = null,
+        DateTime? poDate = null)
+        {
+            var parameters = new DynamicParameters();
+
+            parameters.Add("@POID", poid);
+            parameters.Add("@CompanyID", companyId);
+            parameters.Add("@BranchID", branchId);
+            parameters.Add("@SupplierID", supplierId);
+            parameters.Add("@PODate", poDate);
+
+            if (_db.State == ConnectionState.Closed)
+                _db.Open();
+
+            var list = await _db.QueryAsync<PurchaseOrderEntry>(
+                "sp_GetPurchaseOrder",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            return list;
+        }
     }
+
     }

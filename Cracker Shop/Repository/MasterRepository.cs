@@ -1,4 +1,5 @@
 ﻿using Cracker_Shop.Code_Generator;
+using Cracker_Shop.Models.CommonMasterModels;
 using Cracker_Shop.Models.MasterModels;
 using Cracker_Shop.Repository.IRepository;
 using Dapper;
@@ -16,6 +17,22 @@ namespace Cracker_Shop.Repository
         {
             _db = db;
         }
+
+        public async Task<IEnumerable<Status>> GetActiveStatuses()
+        {
+            var sql = @"
+        SELECT StatusID, StatusCode, StatusName, Description
+        FROM StatusMaster
+        WHERE isActive = 1   
+        ORDER BY StatusName";
+
+            return await _db.QueryAsync<Status>(sql);
+        }
+
+
+
+
+
 
         public async Task<long> AddUpdateDelete(BrandMaster brand)
         {
