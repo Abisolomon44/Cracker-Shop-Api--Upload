@@ -38,7 +38,7 @@ namespace Cracker_Shop.Models.Purchase
         public decimal? ReceivedQty { get; set; }
         public decimal? AcceptedQty { get; set; }
         public decimal? RejectedQty { get; set; }
-
+        public decimal? OrderedQty { get; set; }
         public decimal? PurchaseRate { get; set; }
         public decimal? TaxPercentage { get; set; }
         public decimal? TaxAmount { get; set; }
@@ -46,13 +46,14 @@ namespace Cracker_Shop.Models.Purchase
 
         public string? Remarks { get; set; }
         public bool? IsApproved { get; set; }
-
-        public long? ApprovedBy { get; set; } // ✅ bigint
+        public long? StatusID { get; set; }
+        public string? StatusName { get; set; }
+        public long? ApprovedBy { get; set; } 
         public DateTime? ApprovedAt { get; set; }
 
         public bool? IsActive { get; set; }
 
-        public long? CreatedBy { get; set; } // ✅ bigint
+        public long? CreatedBy { get; set; } 
         public DateTime? CreatedAt { get; set; }
 
         public long? UpdatedBy { get; set; } // ✅ bigint

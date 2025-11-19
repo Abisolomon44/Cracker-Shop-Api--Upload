@@ -8,11 +8,13 @@ namespace Cracker_Shop.Repository.IRepository
         Task<long> AddUpdateDeleteGRNAsync(GRNEntry grn);
         Task<int> AddOrUpdatePurchaseEntryWithStockAsync(List<PurchaseEntry> entries);
         Task<IEnumerable<PurchaseOrderEntry>> GetPurchaseOrdersAsync(
-    int? poid = null,
-    int? companyId = null,
-    int? branchId = null,
-    int? supplierId = null,
-    DateTime? poDate = null
-);
+            int? poid = null,
+            int? companyId = null,
+            int? branchId = null,
+            int? supplierId = null,
+            DateTime? poDate = null,
+            string? poNumber = null   
+        );
+
     }
 }

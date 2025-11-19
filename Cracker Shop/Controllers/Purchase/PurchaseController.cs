@@ -102,14 +102,17 @@ namespace Cracker_Shop.Controllers.Purchase
 
         [HttpGet("GetPurchaseOrder")]
         public async Task<IActionResult> GetPurchaseOrders(
-    int? poid = null,
-    int? companyId = null,
-    int? branchId = null,
-    int? supplierId = null,
-    DateTime? poDate = null)
+            int? poid = null,
+            int? companyId = null,
+            int? branchId = null,
+            int? supplierId = null,
+            DateTime? poDate = null,
+            string? poNumber = null   
+        )
         {
             var result = await _purchaseRepo.GetPurchaseOrdersAsync(
-                poid, companyId, branchId, supplierId, poDate);
+                poid, companyId, branchId, supplierId, poDate, poNumber  
+            );
 
             return Ok(result);
         }

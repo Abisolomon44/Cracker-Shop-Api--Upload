@@ -197,22 +197,33 @@ namespace Cracker_Shop.Repository
 
         public async Task<long> AddUpdateDeleteGRNAsync(GRNEntry grn)
         {
-            if (string.IsNullOrWhiteSpace(grn.GRNNumber))
-                throw new ArgumentException("GRN number is required.");
+            if (grn == null)
+                throw new ArgumentNullException(nameof(grn));
 
             if (grn.CompanyID == null || grn.CompanyID <= 0)
                 throw new ArgumentException("CompanyID is required.");
 
+            // ⭐ TRIM + NORMALIZE
+            grn.GRNNumber = grn.GRNNumber?.Trim();
+            grn.GRNNumber = Regex.Replace(grn.GRNNumber ?? "", @"\s+", " ");
 
-            grn.GRNNumber = Regex.Replace(grn.GRNNumber.Trim(), @"\s+", " ");
+            // ⭐ GENERATE GRN NUMBER IF EMPTY
+            if ((grn.GRNEntryID == 0 || grn.GRNEntryID == null) &&
+                string.IsNullOrWhiteSpace(grn.GRNNumber))
+            {
+                grn.GRNNumber = await CodeGenerator.GenerateNextCodeAsync(
+                    _db, "GRNEntry", "GRNNumber", prefix: "GRN",  5
+                );
+            }
 
             if (_db.State == ConnectionState.Closed)
-                _db.Open(); // ✅ Ensure connection is open
+                _db.Open();
+
             using (var transaction = _db.BeginTransaction())
             {
                 try
                 {
-                    // 🔹 Check for duplicates
+                    // 🔍 Duplicate Check
                     const string duplicateSql = @"
                 SELECT COUNT(1)
                 FROM GRNEntry
@@ -233,7 +244,9 @@ namespace Cracker_Shop.Repository
 
                     long resultId;
 
-                    // 🔹 INSERT
+                    // ─────────────────────────────────────────────
+                    // INSERT
+                    // ─────────────────────────────────────────────
                     if (grn.GRNEntryID == 0 || grn.GRNEntryID == null)
                     {
                         grn.IsActive = true;
@@ -248,6 +261,8 @@ namespace Cracker_Shop.Repository
                         ProductID, ProductCode, ProductName, UnitID,
                         ReceivedQty, AcceptedQty, RejectedQty, PurchaseRate,
                         TaxPercentage, TaxAmount, TotalAmount,
+                        OrderedQty,
+                        StatusId, StatusName,
                         Remarks, IsApproved, ApprovedBy, ApprovedAt,
                         IsActive, CreatedBy, CreatedAt
                     )
@@ -259,6 +274,8 @@ namespace Cracker_Shop.Repository
                         @ProductID, @ProductCode, @ProductName, @UnitID,
                         @ReceivedQty, @AcceptedQty, @RejectedQty, @PurchaseRate,
                         @TaxPercentage, @TaxAmount, @TotalAmount,
+                        @OrderedQty,
+                        @StatusId, @StatusName,
                         @Remarks, @IsApproved, @ApprovedBy, @ApprovedAt,
                         @IsActive, @CreatedBy, @CreatedAt
                     );
@@ -267,7 +284,9 @@ namespace Cracker_Shop.Repository
 
                         resultId = await _db.ExecuteScalarAsync<long>(insertSql, grn, transaction);
                     }
-                    // 🔹 DEACTIVATE
+                    // ─────────────────────────────────────────────
+                    // DELETE (SOFT DELETE)
+                    // ─────────────────────────────────────────────
                     else if (grn.IsActive == false)
                     {
                         const string deactivateSql = @"
@@ -280,63 +299,67 @@ namespace Cracker_Shop.Repository
                         await _db.ExecuteAsync(deactivateSql, grn, transaction);
                         resultId = grn.GRNEntryID ?? 0;
                     }
-                    // 🔹 UPDATE
+                    // ─────────────────────────────────────────────
+                    // UPDATE
+                    // ─────────────────────────────────────────────
                     else
                     {
                         grn.UpdatedAt = DateTime.Now;
 
                         const string updateSql = @"
-                    UPDATE GRNEntry
-                    SET
-                        GRNNumber       = @GRNNumber,
-                        GRNDate         = @GRNDate,
-                        POID            = @POID,
-                        PODetailID      = @PODetailID,
-                        PurchaseID      = @PurchaseID,
-                        SupplierID      = @SupplierID,
-                        SupplierName    = @SupplierName,
-                        CompanyID       = @CompanyID,
-                        BranchID        = @BranchID,
-                        InvoiceNumber   = @InvoiceNumber,
-                        InvoiceDate     = @InvoiceDate,
-                        TransportName   = @TransportName,
-                        VehicleNumber   = @VehicleNumber,
-                        ReceivedBy      = @ReceivedBy,
-                        ProductID       = @ProductID,
-                        ProductCode     = @ProductCode,
-                        ProductName     = @ProductName,
-                        UnitID          = @UnitID,
-                        ReceivedQty     = @ReceivedQty,
-                        AcceptedQty     = @AcceptedQty,
-                        RejectedQty     = @RejectedQty,
-                        PurchaseRate    = @PurchaseRate,
-                        TaxPercentage   = @TaxPercentage,
-                        TaxAmount       = @TaxAmount,
-                        TotalAmount     = @TotalAmount,
-                        Remarks         = @Remarks,
-                        IsApproved      = @IsApproved,
-                        ApprovedBy      = @ApprovedBy,
-                        ApprovedAt      = @ApprovedAt,
-                        UpdatedBy       = @UpdatedBy,
-                        UpdatedAt       = @UpdatedAt
+                    UPDATE GRNEntry SET
+                        GRNNumber     = @GRNNumber,
+                        GRNDate       = @GRNDate,
+                        POID          = @POID,
+                        PODetailID    = @PODetailID,
+                        PurchaseID    = @PurchaseID,
+                        SupplierID    = @SupplierID,
+                        SupplierName  = @SupplierName,
+                        CompanyID     = @CompanyID,
+                        BranchID      = @BranchID,
+                        InvoiceNumber = @InvoiceNumber,
+                        InvoiceDate   = @InvoiceDate,
+                        TransportName = @TransportName,
+                        VehicleNumber = @VehicleNumber,
+                        ReceivedBy    = @ReceivedBy,
+                        ProductID     = @ProductID,
+                        ProductCode   = @ProductCode,
+                        ProductName   = @ProductName,
+                        UnitID        = @UnitID,
+                        ReceivedQty   = @ReceivedQty,
+                        AcceptedQty   = @AcceptedQty,
+                        RejectedQty   = @RejectedQty,
+                        PurchaseRate  = @PurchaseRate,
+                        TaxPercentage = @TaxPercentage,
+                        TaxAmount     = @TaxAmount,
+                        OrderedQty    = @OrderedQty,
+                        StatusId      = @StatusId,
+                        StatusName    = @StatusName,
+                        TotalAmount   = @TotalAmount,
+                        Remarks       = @Remarks,
+                        IsApproved    = @IsApproved,
+                        ApprovedBy    = @ApprovedBy,
+                        ApprovedAt    = @ApprovedAt,
+                        UpdatedBy     = @UpdatedBy,
+                        UpdatedAt     = @UpdatedAt
                     WHERE GRNEntryID = @GRNEntryID";
 
                         await _db.ExecuteAsync(updateSql, grn, transaction);
                         resultId = grn.GRNEntryID ?? 0;
                     }
 
-                    // 🔹 Commit if everything succeeded
                     transaction.Commit();
                     return resultId;
                 }
-                catch (Exception)
+                catch
                 {
-                    // 🔻 Rollback if anything failed
                     transaction.Rollback();
                     throw;
                 }
             }
         }
+
+
         public async Task<int> AddOrUpdatePurchaseEntryWithStockAsync(List<PurchaseEntry> entries)
         {
             if (entries == null || entries.Count == 0)
@@ -359,7 +382,6 @@ namespace Cracker_Shop.Repository
 
                         entry.ProductName = entry.ProductName.Trim();
 
-                        // 🔍 Check if PurchaseEntry exists
                         const string checkPurchaseSql = @"
                     SELECT TOP 1 PurchaseID
                     FROM PurchaseEntry
@@ -373,7 +395,6 @@ namespace Cracker_Shop.Repository
 
                         if (existingPurchaseID != null && existingPurchaseID > 0)
                         {
-                            // ✅ Update Purchase Entry (full columns)
                             const string updateEntrySql = @"
                         UPDATE PurchaseEntry SET
                             Quantity = ISNULL(Quantity,0) + @Quantity,
@@ -434,7 +455,6 @@ namespace Cracker_Shop.Repository
                             entry.PurchaseID = lastPurchaseId;
                         }
 
-                        // 🔍 Check Stock
                         const string checkStockSql = @"
                     SELECT TOP 1 StockID
                     FROM PurchaseEntryStock
@@ -447,7 +467,6 @@ namespace Cracker_Shop.Repository
 
                         if (existingStockID != null && existingStockID > 0)
                         {
-                            // ✅ FULL UPDATE Stock
                             const string updateStockSql = @"
                         UPDATE PurchaseEntryStock SET
                             PurchaseDate = @PurchaseDate,
@@ -555,11 +574,13 @@ namespace Cracker_Shop.Repository
         }
 
         public async Task<IEnumerable<PurchaseOrderEntry>> GetPurchaseOrdersAsync(
-        int? poid = null,
-        int? companyId = null,
-        int? branchId = null,
-        int? supplierId = null,
-        DateTime? poDate = null)
+         int? poid = null,
+         int? companyId = null,
+         int? branchId = null,
+         int? supplierId = null,
+         DateTime? poDate = null,
+         string? poNumber = null  
+     )
         {
             var parameters = new DynamicParameters();
 
@@ -568,6 +589,7 @@ namespace Cracker_Shop.Repository
             parameters.Add("@BranchID", branchId);
             parameters.Add("@SupplierID", supplierId);
             parameters.Add("@PODate", poDate);
+            parameters.Add("@PONumber", poNumber);  
 
             if (_db.State == ConnectionState.Closed)
                 _db.Open();
@@ -580,6 +602,24 @@ namespace Cracker_Shop.Repository
 
             return list;
         }
-    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     }
+
+}
