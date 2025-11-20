@@ -36,7 +36,7 @@ namespace Cracker_Shop.Controllers.MasterController
             {
                 Success = success,
                 Message = message,
-                Data = datau
+                Data = data
             });
         }
 
