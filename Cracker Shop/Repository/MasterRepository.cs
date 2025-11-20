@@ -32,6 +32,27 @@ namespace Cracker_Shop.Repository
 
 
 
+        // GET ALL (ACTIVE ONLY)
+        public async Task<IEnumerable<PaymentModeDto>> GetAllPaymentModesAsync()
+        {
+            var sql = @"SELECT 
+                        PaymentModeID,
+                        PaymentModeName,
+                        PaymentType,
+                        Description,
+                        IsActive,
+                        CreatedByUserID,
+                        CreatedSystemName,
+                        CreatedAt,
+                        UpdatedByUserID,
+                        UpdatedSystemName,
+                        UpdatedAt
+                    FROM PaymentModeMaster
+                    WHERE IsActive = 1
+                    ORDER BY PaymentModeName";
+
+            return await _db.QueryAsync<PaymentModeDto>(sql);
+        }
 
 
         public async Task<long> AddUpdateDelete(BrandMaster brand)

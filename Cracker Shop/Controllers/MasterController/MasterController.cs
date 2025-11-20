@@ -36,11 +36,17 @@ namespace Cracker_Shop.Controllers.MasterController
             {
                 Success = success,
                 Message = message,
-                Data = data
+                Data = datau
             });
         }
 
-
+        // ================= Payment Mode =================
+        [HttpGet("PaymentMode")]
+        public async Task<IActionResult> GetPaymentModes()
+        {
+            var result = await _repo.GetAllPaymentModesAsync();
+            return Ok(result);
+        }
 
         [HttpGet("Status")]
         public async Task<IActionResult> GetStatus() =>

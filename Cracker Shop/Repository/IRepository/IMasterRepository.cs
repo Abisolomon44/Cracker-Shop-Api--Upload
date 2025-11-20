@@ -47,5 +47,7 @@ namespace Cracker_Shop.Repository.IRepository
 
         Task<long> SaveUnitAsync(UnitMaster unit);
         Task<IEnumerable<UnitMaster>> GetActiveUnitsAsync();
+
+        Task<IEnumerable<PaymentModeDto>> GetAllPaymentModesAsync();
     }
 }
