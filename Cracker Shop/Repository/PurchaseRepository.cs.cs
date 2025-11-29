@@ -361,324 +361,18 @@ namespace Cracker_Shop.Repository
 
 
 
-
-        public async Task<int> AddOrUpdatePurchaseEntryWithStockAsyncc(List<PurchaseEntry> entries)
-        {
-            if (entries == null || entries.Count == 0)
-                throw new ArgumentException("No purchase entries provided.");
-
-            int lastPurchaseId = 0;
-        
-            if (_db.State == ConnectionState.Closed)
-                _db.Open();
-
-            using (var tran = _db.BeginTransaction())
-            {
-                try
-                {
-                    foreach (var entry in entries)
-                    {
-                        if (entry.CompanyID == null)
-                            throw new ArgumentException("CompanyID is required.");
-
-                        if (string.IsNullOrWhiteSpace(entry.ProductName))
-                            throw new ArgumentException("ProductName is required.");
-
-                        entry.ProductName = entry.ProductName.Trim();
-
-                        // ============================================================
-                        // 1️⃣ CHECK IF PURCHASE ENTRY EXISTS
-                        // ============================================================
-                        const string checkPurchaseSql = @"
-                    SELECT TOP 1 PurchaseID
-                    FROM PurchaseEntry
-                    WHERE LTRIM(RTRIM(UPPER(ProductName))) = UPPER(@ProductName)
-                      AND ISNULL(PurchaseRate,0) = ISNULL(@PurchaseRate,0)
-                      AND CompanyID = @CompanyID
-                      AND BranchID = @BranchID
-                      AND IsActive = 1";
-
-                        var existingPurchaseID = await _db.ExecuteScalarAsync<int?>(checkPurchaseSql, entry, tran);
-
-                        // ============================================================
-                        // 2️⃣ UPDATE PURCHASE ENTRY
-                        // ============================================================
-                        if (existingPurchaseID != null && existingPurchaseID > 0)
-                        {
-                            const string updateEntrySql = @"
-                        UPDATE PurchaseEntry SET
-                            Quantity = ISNULL(Quantity,0) + @Quantity,
-                            TotalAmount = ISNULL(TotalAmount,0) + @TotalAmount,
-
-                            PurchaseRate = @PurchaseRate,
-                            RetailPrice = @RetailPrice,
-                            WholesalePrice = @WholesalePrice,
-                            SaleRate = @SaleRate,
-                            MRP = @MRP,
-
-                            GstPercentage = @GstPercentage,
-                            GstAmount = @GstAmount,
-                            DiscountAmount = @DiscountAmount,
-                            DiscountPercentage = @DiscountPercentage,
-                            InclusiveAmount = @InclusiveAmount,
-                            ExclusiveAmount = @ExclusiveAmount,
-
-                            TotalGrossAmount     = @TotalGrossAmount,
-                            TotalDiscAmount      = @TotalDiscAmount,
-                            TotalTaxableAmount   = @TotalTaxableAmount,
-                            TotalGstAmount       = @TotalGstAmount,
-                            TotalCessAmount      = @TotalCessAmount,
-                            TotalNetAmount       = @TotalNetAmount,
-                            TotalInvoiceAmount   = @TotalInvoiceAmount,
-                            TotalPaidAmount      = @TotalPaidAmount,
-                            TotalBalanceAmount   = @TotalBalanceAmount,
-                            TotalRoundOff        = @TotalRoundOff,
-
-                            UpdatedByUserID = @UpdatedByUserID,
-                            UpdatedSystemName = @UpdatedSystemName,
-                            UpdatedAt = SYSDATETIME()
-                        WHERE PurchaseID = @PurchaseID";
-
-                            entry.PurchaseID = existingPurchaseID;
-                            await _db.ExecuteAsync(updateEntrySql, entry, tran);
-
-                            lastPurchaseId = existingPurchaseID.Value;
-                        }
-                        else
-                        {
-                            // ============================================================
-                            // 3️⃣ INSERT NEW PURCHASE ENTRY
-                            // ============================================================
-                            const string insertEntrySql = @"
-                        INSERT INTO PurchaseEntry
-                        (
-                            PONumber, PurchaseDate, CompanyID, CompanyName, BranchID, BranchName,
-                            SupplierID, SupplierName, ProductName, PurchaseRate, Quantity, TotalAmount,
-                            StatusID, InvoiceNumber, InvoiceDate, SupplierInvoiceNumber, SupplierInvoiceDate,
-                            BrandID, UnitID, HSNID, CategoryID, SubCategoryID, Barcode, ProductCode,
-                            RetailPrice, WholesalePrice, SaleRate, MRP, DiscountAmount, DiscountPercentage,
-                            InclusiveAmount, ExclusiveAmount, GstPercentage, GstAmount, CGSTRate, CGSTAmount,
-                            SGSTRate, SGSTAmount, IGSTRate, IGSTAmount, CESSRate, CESSAmount,
-                            TaxableValue, IsGSTInclusive, OrderedQuantity, ReceivedQuantity, ReturnedQuantity,
-                            RemainingQuantity, OpeningStock, ReorderLevel, CurrentStock, Color, Size, Weight,
-                            Volume, Material, FinishType, ShadeCode, Capacity, ModelNumber, ExpiryDate,
-                            IsService, StatusName, TaxAmount, GrandTotal, Remarks, IsActive,
-                            CreatedByUserID, CreatedSystemName, CreatedAt,
-
-                            -- 🔥 NEW TOTAL COLUMNS
-                            TotalGrossAmount, TotalDiscAmount, TotalTaxableAmount,
-                            TotalGstAmount, TotalCessAmount, TotalNetAmount,
-                            TotalInvoiceAmount, TotalPaidAmount, TotalBalanceAmount, TotalRoundOff
-                        )
-                        VALUES
-                        (
-                            @PONumber, @PurchaseDate, @CompanyID, @CompanyName, @BranchID, @BranchName,
-                            @SupplierID, @SupplierName, @ProductName, @PurchaseRate, @Quantity, @TotalAmount,
-                            @StatusID, @InvoiceNumber, @InvoiceDate, @SupplierInvoiceNumber, @SupplierInvoiceDate,
-                            @BrandID, @UnitID, @HSNID, @CategoryID, @SubCategoryID, @Barcode, @ProductCode,
-                            @RetailPrice, @WholesalePrice, @SaleRate, @MRP, @DiscountAmount, @DiscountPercentage,
-                            @InclusiveAmount, @ExclusiveAmount, @GstPercentage, @GstAmount, @CGSTRate, @CGSTAmount,
-                            @SGSTRate, @SGSTAmount, @IGSTRate, @IGSTAmount, @CESSRate, @CESSAmount,
-                            @TaxableValue, @IsGSTInclusive, @OrderedQuantity, @ReceivedQuantity, @ReturnedQuantity,
-                            @RemainingQuantity, @OpeningStock, @ReorderLevel, @CurrentStock, @Color, @Size, @Weight,
-                            @Volume, @Material, @FinishType, @ShadeCode, @Capacity, @ModelNumber, @ExpiryDate,
-                            @IsService, @StatusName, @TaxAmount, @GrandTotal, @Remarks, 1,
-                            @CreatedByUserID, @CreatedSystemName, SYSDATETIME(),
-
-                            -- NEW TOTALS
-                            @TotalGrossAmount, @TotalDiscAmount, @TotalTaxableAmount,
-                            @TotalGstAmount, @TotalCessAmount, @TotalNetAmount,
-                            @TotalInvoiceAmount, @TotalPaidAmount, @TotalBalanceAmount, @TotalRoundOff
-                        );
-                        SELECT CAST(SCOPE_IDENTITY() AS INT);";
-
-                            lastPurchaseId = await _db.ExecuteScalarAsync<int>(insertEntrySql, entry, tran);
-                            entry.PurchaseID = lastPurchaseId;
-                        }
-
-                        // ============================================================
-                        // 4️⃣ CHECK IF STOCK EXISTS
-                        // ============================================================
-                        const string checkStockSql = @"
-                    SELECT TOP 1 StockID
-                    FROM PurchaseEntryStock
-                    WHERE LTRIM(RTRIM(UPPER(ProductName))) = UPPER(@ProductName)
-                      AND CompanyID = @CompanyID
-                      AND BranchID = @BranchID
-                      AND IsActive = 1";
-
-                        var existingStockID = await _db.ExecuteScalarAsync<int?>(checkStockSql, entry, tran);
-
-                        // ============================================================
-                        // 5️⃣ UPDATE STOCK
-                        // ============================================================
-                        if (existingStockID != null && existingStockID > 0)
-                        {
-                            const string updateStockSql = @"
-                        UPDATE PurchaseEntryStock SET
-                            PurchaseDate = @PurchaseDate,
-                            PurchaseRate = @PurchaseRate,
-                            RetailPrice = @RetailPrice,
-                            WholesalePrice = @WholesalePrice,
-                            SaleRate = @SaleRate,
-                            MRP = @MRP,
-                            GstPercentage = @GstPercentage,
-                            GstAmount = @GstAmount,
-                            InclusiveAmount = @InclusiveAmount,
-                            ExclusiveAmount = @ExclusiveAmount,
-                            DiscountAmount = @DiscountAmount,
-                            DiscountPercentage = @DiscountPercentage,
-                            QuantityPurchased = ISNULL(QuantityPurchased,0) + @Quantity,
-                            CurrentStock = ISNULL(CurrentStock,0) + @Quantity,
-                            TotalAmount = @TotalAmount,
-                            TaxAmount = @TaxAmount,
-                            GrandTotal = @GrandTotal,
-
-                            -- 🔥 NEW TOTAL COLUMNS
-                            TotalGrossAmount     = @TotalGrossAmount,
-                            TotalDiscAmount      = @TotalDiscAmount,
-                            TotalTaxableAmount   = @TotalTaxableAmount,
-                            TotalGstAmount       = @TotalGstAmount,
-                            TotalCessAmount      = @TotalCessAmount,
-                            TotalNetAmount       = @TotalNetAmount,
-                            TotalInvoiceAmount   = @TotalInvoiceAmount,
-                            TotalPaidAmount      = @TotalPaidAmount,
-                            TotalBalanceAmount   = @TotalBalanceAmount,
-                            TotalRoundOff        = @TotalRoundOff,
-
-                            Color = @Color,
-                            Size = @Size,
-                            Weight = @Weight,
-                            Volume = @Volume,
-                            Material = @Material,
-                            FinishType = @FinishType,
-                            ShadeCode = @ShadeCode,
-                            Capacity = @Capacity,
-                            ModelNumber = @ModelNumber,
-                            ExpiryDate = @ExpiryDate,
-                            Remarks = @Remarks,
-                            UpdatedByUserID = @UpdatedByUserID,
-                            UpdatedSystemName = @UpdatedSystemName,
-                            UpdatedAt = SYSDATETIME()
-                        WHERE StockID = @StockID";
-
-                            await _db.ExecuteAsync(updateStockSql, new
-                            {
-                                StockID = existingStockID,
-                                entry.PurchaseDate,
-                                entry.PurchaseRate,
-                                entry.RetailPrice,
-                                entry.WholesalePrice,
-                                entry.SaleRate,
-                                entry.MRP,
-                                entry.GstPercentage,
-                                entry.GstAmount,
-                                entry.InclusiveAmount,
-                                entry.ExclusiveAmount,
-                                entry.DiscountAmount,
-                                entry.DiscountPercentage,
-                                entry.Quantity,
-                                entry.TotalAmount,
-                                entry.TaxAmount,
-                                entry.GrandTotal,
-
-                                // TOTALS
-                                entry.TotalGrossAmount,
-                                entry.TotalDiscAmount,
-                                entry.TotalTaxableAmount,
-                                entry.TotalGstAmount,
-                                entry.TotalCessAmount,
-                                entry.TotalNetAmount,
-                                entry.TotalInvoiceAmount,
-                                entry.TotalPaidAmount,
-                                entry.TotalBalanceAmount,
-                                entry.TotalRoundOff,
-
-                                entry.Color,
-                                entry.Size,
-                                entry.Weight,
-                                entry.Volume,
-                                entry.Material,
-                                entry.FinishType,
-                                entry.ShadeCode,
-                                entry.Capacity,
-                                entry.ModelNumber,
-                                entry.ExpiryDate,
-                                entry.Remarks,
-                                entry.UpdatedByUserID,
-                                entry.UpdatedSystemName
-                            }, tran);
-                        }
-                        else
-                        {
-                            // ============================================================
-                            // 6️⃣ INSERT NEW STOCK
-                            // ============================================================
-                            const string insertStockSql = @"
-                        INSERT INTO PurchaseEntryStock
-                        (
-                            PurchaseID, PONumber, PurchaseDate, CompanyID, CompanyName, BranchID, BranchName,
-                            SupplierID, SupplierName, ProductName, PurchaseRate, QuantityPurchased, CurrentStock,
-                            RetailPrice, WholesalePrice, SaleRate, MRP, GstPercentage, GstAmount,
-                            InclusiveAmount, ExclusiveAmount, DiscountAmount, DiscountPercentage,
-                            Color, Size, Weight, Volume, Material, FinishType, ShadeCode, Capacity, ModelNumber,
-                            ExpiryDate, TotalAmount, TaxAmount, GrandTotal, Remarks,
-                            CreatedByUserID, CreatedSystemName, CreatedAt, IsActive,
-
-                            -- 🔥 NEW TOTAL COLUMNS
-                            TotalGrossAmount, TotalDiscAmount, TotalTaxableAmount,
-                            TotalGstAmount, TotalCessAmount, TotalNetAmount,
-                            TotalInvoiceAmount, TotalPaidAmount, TotalBalanceAmount, TotalRoundOff
-                        )
-                        VALUES
-                        (
-                            @PurchaseID, @PONumber, @PurchaseDate, @CompanyID, @CompanyName, @BranchID, @BranchName,
-                            @SupplierID, @SupplierName, @ProductName, @PurchaseRate, @Quantity, @Quantity,
-                            @RetailPrice, @WholesalePrice, @SaleRate, @MRP, @GstPercentage, @GstAmount,
-                            @InclusiveAmount, @ExclusiveAmount, @DiscountAmount, @DiscountPercentage,
-                            @Color, @Size, @Weight, @Volume, @Material, @FinishType, @ShadeCode, @Capacity, @ModelNumber,
-                            @ExpiryDate, @TotalAmount, @TaxAmount, @GrandTotal, @Remarks,
-                            @CreatedByUserID, @CreatedSystemName, SYSDATETIME(), 1,
-
-                            -- TOTALS
-                            @TotalGrossAmount, @TotalDiscAmount, @TotalTaxableAmount,
-                            @TotalGstAmount, @TotalCessAmount, @TotalNetAmount,
-                            @TotalInvoiceAmount, @TotalPaidAmount, @TotalBalanceAmount, @TotalRoundOff
-                        );";
-
-                            await _db.ExecuteAsync(insertStockSql, entry, tran);
-                        }
-                    }
-
-                    tran.Commit();
-                }
-                catch
-                {
-                    tran.Rollback();
-                    throw;
-                }
-            }
-
-            return lastPurchaseId;
-        }
-
-
-
-
         public async Task<int> AddOrUpdatePurchaseEntryWithStockAsync(List<PurchaseEntry> entries)
         {
             if (entries == null || entries.Count == 0)
                 throw new ArgumentException("No purchase entries provided.");
 
-
             var header = entries[0];
-
             if (header == null)
                 throw new ArgumentNullException(nameof(header));
 
             header.PONumber = header.PONumber?.Trim();
 
-            // ⭐ AUTO GENERATE PONumber
+            // ⭐ AUTO GENERATE PO NUMBER
             if ((header.POID == 0 || header.POID == null) && string.IsNullOrWhiteSpace(header.PONumber))
             {
                 header.PONumber = await CodeGenerator.GenerateNextCodeAsync(
@@ -689,15 +383,7 @@ namespace Cracker_Shop.Repository
             if (_db.State == ConnectionState.Closed)
                 _db.Open();
 
-
-
-
-
             int lastPurchaseId = 0;
-
-
-            if (_db.State == ConnectionState.Closed)
-                _db.Open();
 
             using (var tran = _db.BeginTransaction())
             {
@@ -713,174 +399,100 @@ namespace Cracker_Shop.Repository
 
                         entry.ProductName = entry.ProductName.Trim();
 
-                        // ============================================================
-                        // 1️⃣ CHECK IF PURCHASE ENTRY EXISTS
-                        // ============================================================
-                        const string checkPurchaseSql = @"
-                    SELECT TOP 1 PurchaseID
-                    FROM PurchaseEntry
-                    WHERE LTRIM(RTRIM(UPPER(ProductName))) = UPPER(@ProductName)
-                      AND ISNULL(PurchaseRate,0) = ISNULL(@PurchaseRate,0)
-                      AND CompanyID = @CompanyID
-                      AND BranchID = @BranchID
-                      AND IsActive = 1";
+                        // ============================================
+                        // 1️⃣ ALWAYS INSERT PURCHASE ENTRY (Never Update)
+                        // ============================================
+                        const string insertEntrySql = @"
+                INSERT INTO PurchaseEntry
+                (
+                    PONumber, PurchaseDate, CompanyID, CompanyName, BranchID, BranchName,
+                    SupplierID, SupplierName, ProductName, PurchaseRate, Quantity, TotalAmount,
+                    StatusID, InvoiceNumber, InvoiceDate, SupplierInvoiceNumber, SupplierInvoiceDate,
+                    BrandID, UnitID, HSNID, CategoryID, SubCategoryID, Barcode, ProductCode,
+                    RetailPrice, WholesalePrice, SaleRate, MRP, DiscountAmount, DiscountPercentage,
+                    InclusiveAmount, ExclusiveAmount, GstPercentage, GstAmount, CGSTRate, CGSTAmount,
+                    SGSTRate, SGSTAmount, IGSTRate, IGSTAmount, CESSRate, CESSAmount,
+                    TaxableValue, IsGSTInclusive, OrderedQuantity, ReceivedQuantity, ReturnedQuantity,
+                    RemainingQuantity, OpeningStock, ReorderLevel, CurrentStock, Color, Size, Weight,
+                    Volume, Material, FinishType, ShadeCode, Capacity, ModelNumber, ExpiryDate,
+                    IsService, StatusName, TaxAmount, GrandTotal, Remarks, IsActive,
+                    CreatedByUserID, CreatedSystemName, CreatedAt,
+                    TotalGrossAmount, TotalDiscAmount, TotalTaxableAmount,
+                    TotalGstAmount, TotalCessAmount, TotalNetAmount,
+                    TotalInvoiceAmount, TotalPaidAmount, TotalBalanceAmount, TotalRoundOff
+                )
+                VALUES
+                (
+                    @PONumber, @PurchaseDate, @CompanyID, @CompanyName, @BranchID, @BranchName,
+                    @SupplierID, @SupplierName, @ProductName, @PurchaseRate, @Quantity, @TotalAmount,
+                    @StatusID, @InvoiceNumber, @InvoiceDate, @SupplierInvoiceNumber, @SupplierInvoiceDate,
+                    @BrandID, @UnitID, @HSNID, @CategoryID, @SubCategoryID, @Barcode, @ProductCode,
+                    @RetailPrice, @WholesalePrice, @SaleRate, @MRP, @DiscountAmount, @DiscountPercentage,
+                    @InclusiveAmount, @ExclusiveAmount, @GstPercentage, @GstAmount, @CGSTRate, @CGSTAmount,
+                    @SGSTRate, @SGSTAmount, @IGSTRate, @IGSTAmount, @CESSRate, @CESSAmount,
+                    @TaxableValue, @IsGSTInclusive, @OrderedQuantity, @ReceivedQuantity, @ReturnedQuantity,
+                    @RemainingQuantity, @OpeningStock, @ReorderLevel, @CurrentStock, @Color, @Size, @Weight,
+                    @Volume, @Material, @FinishType, @ShadeCode, @Capacity, @ModelNumber, @ExpiryDate,
+                    @IsService, @StatusName, @TaxAmount, @GrandTotal, @Remarks, 1,
+                    @CreatedByUserID, @CreatedSystemName, SYSDATETIME(),
+                    @TotalGrossAmount, @TotalDiscAmount, @TotalTaxableAmount,
+                    @TotalGstAmount, @TotalCessAmount, @TotalNetAmount,
+                    @TotalInvoiceAmount, @TotalPaidAmount, @TotalBalanceAmount, @TotalRoundOff
+                );
+                SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
-                        var existingPurchaseID = await _db.ExecuteScalarAsync<int?>(checkPurchaseSql, entry, tran);
+                        lastPurchaseId = await _db.ExecuteScalarAsync<int>(insertEntrySql, entry, tran);
+                        entry.PurchaseID = lastPurchaseId;
 
-                        // ============================================================
-                        // 2️⃣ UPDATE PURCHASE ENTRY
-                        // ============================================================
-                        if (existingPurchaseID != null && existingPurchaseID > 0)
-                        {
-                            const string updateEntrySql = @"
-                        UPDATE PurchaseEntry SET
-                            Quantity = ISNULL(Quantity,0) + @Quantity,
-                            TotalAmount = ISNULL(TotalAmount,0) + @TotalAmount,
 
-                            PurchaseRate = @PurchaseRate,
-                            RetailPrice = @RetailPrice,
-                            WholesalePrice = @WholesalePrice,
-                            SaleRate = @SaleRate,
-                            MRP = @MRP,
-
-                            GstPercentage = @GstPercentage,
-                            GstAmount = @GstAmount,
-                            DiscountAmount = @DiscountAmount,
-                            DiscountPercentage = @DiscountPercentage,
-                            InclusiveAmount = @InclusiveAmount,
-                            ExclusiveAmount = @ExclusiveAmount,
-
-                            TotalGrossAmount     = @TotalGrossAmount,
-                            TotalDiscAmount      = @TotalDiscAmount,
-                            TotalTaxableAmount   = @TotalTaxableAmount,
-                            TotalGstAmount       = @TotalGstAmount,
-                            TotalCessAmount      = @TotalCessAmount,
-                            TotalNetAmount       = @TotalNetAmount,
-                            TotalInvoiceAmount   = @TotalInvoiceAmount,
-                            TotalPaidAmount      = @TotalPaidAmount,
-                            TotalBalanceAmount   = @TotalBalanceAmount,
-                            TotalRoundOff        = @TotalRoundOff,
-
-                            UpdatedByUserID = @UpdatedByUserID,
-                            UpdatedSystemName = @UpdatedSystemName,
-                            UpdatedAt = SYSDATETIME()
-                        WHERE PurchaseID = @PurchaseID";
-
-                            entry.PurchaseID = existingPurchaseID;
-                            await _db.ExecuteAsync(updateEntrySql, entry, tran);
-
-                            lastPurchaseId = existingPurchaseID.Value;
-                        }
-                        else
-                        {
-                            // ============================================================
-                            // 3️⃣ INSERT NEW PURCHASE ENTRY
-                            // ============================================================
-                            const string insertEntrySql = @"
-                        INSERT INTO PurchaseEntry
-                        (
-                            PONumber, PurchaseDate, CompanyID, CompanyName, BranchID, BranchName,
-                            SupplierID, SupplierName, ProductName, PurchaseRate, Quantity, TotalAmount,
-                            StatusID, InvoiceNumber, InvoiceDate, SupplierInvoiceNumber, SupplierInvoiceDate,
-                            BrandID, UnitID, HSNID, CategoryID, SubCategoryID, Barcode, ProductCode,
-                            RetailPrice, WholesalePrice, SaleRate, MRP, DiscountAmount, DiscountPercentage,
-                            InclusiveAmount, ExclusiveAmount, GstPercentage, GstAmount, CGSTRate, CGSTAmount,
-                            SGSTRate, SGSTAmount, IGSTRate, IGSTAmount, CESSRate, CESSAmount,
-                            TaxableValue, IsGSTInclusive, OrderedQuantity, ReceivedQuantity, ReturnedQuantity,
-                            RemainingQuantity, OpeningStock, ReorderLevel, CurrentStock, Color, Size, Weight,
-                            Volume, Material, FinishType, ShadeCode, Capacity, ModelNumber, ExpiryDate,
-                            IsService, StatusName, TaxAmount, GrandTotal, Remarks, IsActive,
-                            CreatedByUserID, CreatedSystemName, CreatedAt,
-                            TotalGrossAmount, TotalDiscAmount, TotalTaxableAmount,
-                            TotalGstAmount, TotalCessAmount, TotalNetAmount,
-                            TotalInvoiceAmount, TotalPaidAmount, TotalBalanceAmount, TotalRoundOff
-                        )
-                        VALUES
-                        (
-                            @PONumber, @PurchaseDate, @CompanyID, @CompanyName, @BranchID, @BranchName,
-                            @SupplierID, @SupplierName, @ProductName, @PurchaseRate, @Quantity, @TotalAmount,
-                            @StatusID, @InvoiceNumber, @InvoiceDate, @SupplierInvoiceNumber, @SupplierInvoiceDate,
-                            @BrandID, @UnitID, @HSNID, @CategoryID, @SubCategoryID, @Barcode, @ProductCode,
-                            @RetailPrice, @WholesalePrice, @SaleRate, @MRP, @DiscountAmount, @DiscountPercentage,
-                            @InclusiveAmount, @ExclusiveAmount, @GstPercentage, @GstAmount, @CGSTRate, @CGSTAmount,
-                            @SGSTRate, @SGSTAmount, @IGSTRate, @IGSTAmount, @CESSRate, @CESSAmount,
-                            @TaxableValue, @IsGSTInclusive, @OrderedQuantity, @ReceivedQuantity, @ReturnedQuantity,
-                            @RemainingQuantity, @OpeningStock, @ReorderLevel, @CurrentStock, @Color, @Size, @Weight,
-                            @Volume, @Material, @FinishType, @ShadeCode, @Capacity, @ModelNumber, @ExpiryDate,
-                            @IsService, @StatusName, @TaxAmount, @GrandTotal, @Remarks, 1,
-                            @CreatedByUserID, @CreatedSystemName, SYSDATETIME(),
-                            @TotalGrossAmount, @TotalDiscAmount, @TotalTaxableAmount,
-                            @TotalGstAmount, @TotalCessAmount, @TotalNetAmount,
-                            @TotalInvoiceAmount, @TotalPaidAmount, @TotalBalanceAmount, @TotalRoundOff
-                        );
-                        SELECT CAST(SCOPE_IDENTITY() AS INT);";
-
-                            lastPurchaseId = await _db.ExecuteScalarAsync<int>(insertEntrySql, entry, tran);
-                            entry.PurchaseID = lastPurchaseId;
-                        }
-
-                        // ============================================================
-                        // 4️⃣ CHECK IF STOCK EXISTS
-                        // ============================================================
+                        // ============================================
+                        // 2️⃣ CHECK STOCK EXISTS
+                        // ============================================
                         const string checkStockSql = @"
-                    SELECT TOP 1 StockID
-                    FROM PurchaseEntryStock
-                    WHERE LTRIM(RTRIM(UPPER(ProductName))) = UPPER(@ProductName)
-                      AND CompanyID = @CompanyID
-                      AND BranchID = @BranchID
-                      AND IsActive = 1";
+                SELECT TOP 1 StockID
+                FROM PurchaseEntryStock
+                WHERE UPPER(ProductName) = UPPER(@ProductName)
+                  AND CompanyID = @CompanyID
+                  AND BranchID = @BranchID
+                  AND IsActive = 1";
 
                         var existingStockID = await _db.ExecuteScalarAsync<int?>(checkStockSql, entry, tran);
 
-                        // ============================================================
-                        // 5️⃣ UPDATE STOCK
-                        // ============================================================
+
+                        // ============================================
+                        // 3️⃣ UPDATE STOCK (if exists)
+                        // ============================================
                         if (existingStockID != null && existingStockID > 0)
                         {
                             const string updateStockSql = @"
-                        UPDATE PurchaseEntryStock SET
-                            PurchaseDate = @PurchaseDate,
-                            PurchaseRate = @PurchaseRate,
-                            RetailPrice = @RetailPrice,
-                            WholesalePrice = @WholesalePrice,
-                            SaleRate = @SaleRate,
-                            MRP = @MRP,
-                            GstPercentage = @GstPercentage,
-                            GstAmount = @GstAmount,
-                            InclusiveAmount = @InclusiveAmount,
-                            ExclusiveAmount = @ExclusiveAmount,
-                            DiscountAmount = @DiscountAmount,
-                            DiscountPercentage = @DiscountPercentage,
-                            QuantityPurchased = ISNULL(QuantityPurchased,0) + @Quantity,
-                            CurrentStock = ISNULL(CurrentStock,0) + @Quantity,
-                            TotalAmount = @TotalAmount,
-                            TaxAmount = @TaxAmount,
-                            GrandTotal = @GrandTotal,
-                            TotalGrossAmount     = @TotalGrossAmount,
-                            TotalDiscAmount      = @TotalDiscAmount,
-                            TotalTaxableAmount   = @TotalTaxableAmount,
-                            TotalGstAmount       = @TotalGstAmount,
-                            TotalCessAmount      = @TotalCessAmount,
-                            TotalNetAmount       = @TotalNetAmount,
-                            TotalInvoiceAmount   = @TotalInvoiceAmount,
-                            TotalPaidAmount      = @TotalPaidAmount,
-                            TotalBalanceAmount   = @TotalBalanceAmount,
-                            TotalRoundOff        = @TotalRoundOff,
-                            Color = @Color,
-                            Size = @Size,
-                            Weight = @Weight,
-                            Volume = @Volume,
-                            Material = @Material,
-                            FinishType = @FinishType,
-                            ShadeCode = @ShadeCode,
-                            Capacity = @Capacity,
-                            ModelNumber = @ModelNumber,
-                            ExpiryDate = @ExpiryDate,
-                            Remarks = @Remarks,
-                            UpdatedByUserID = @UpdatedByUserID,
-                            UpdatedSystemName = @UpdatedSystemName,
-                            UpdatedAt = SYSDATETIME()
-                        WHERE StockID = @StockID";
+                    UPDATE PurchaseEntryStock SET
+                        PurchaseDate = @PurchaseDate,
+                        PurchaseRate = @PurchaseRate,
+                        RetailPrice = @RetailPrice,
+                        WholesalePrice = @WholesalePrice,
+                        SaleRate = @SaleRate,
+                        MRP = @MRP,
+                        GstPercentage = @GstPercentage,
+                        GstAmount = @GstAmount,
+                        QuantityPurchased = ISNULL(QuantityPurchased,0) + @Quantity,
+                        CurrentStock = ISNULL(CurrentStock,0) + @Quantity,
+                        TotalAmount = @TotalAmount,
+                        TaxAmount = @TaxAmount,
+                        GrandTotal = @GrandTotal,
+                        TotalGrossAmount = @TotalGrossAmount,
+                        TotalDiscAmount = @TotalDiscAmount,
+                        TotalTaxableAmount = @TotalTaxableAmount,
+                        TotalGstAmount = @TotalGstAmount,
+                        TotalCessAmount = @TotalCessAmount,
+                        TotalNetAmount = @TotalNetAmount,
+                        TotalInvoiceAmount = @TotalInvoiceAmount,
+                        TotalPaidAmount = @TotalPaidAmount,
+                        TotalBalanceAmount = @TotalBalanceAmount,
+                        TotalRoundOff = @TotalRoundOff,
+                        UpdatedByUserID = @UpdatedByUserID,
+                        UpdatedSystemName = @UpdatedSystemName,
+                        UpdatedAt = SYSDATETIME()
+                    WHERE StockID = @StockID";
 
                             await _db.ExecuteAsync(updateStockSql, new
                             {
@@ -893,10 +505,6 @@ namespace Cracker_Shop.Repository
                                 entry.MRP,
                                 entry.GstPercentage,
                                 entry.GstAmount,
-                                entry.InclusiveAmount,
-                                entry.ExclusiveAmount,
-                                entry.DiscountAmount,
-                                entry.DiscountPercentage,
                                 entry.Quantity,
                                 entry.TotalAmount,
                                 entry.TaxAmount,
@@ -911,81 +519,67 @@ namespace Cracker_Shop.Repository
                                 entry.TotalPaidAmount,
                                 entry.TotalBalanceAmount,
                                 entry.TotalRoundOff,
-                                entry.Color,
-                                entry.Size,
-                                entry.Weight,
-                                entry.Volume,
-                                entry.Material,
-                                entry.FinishType,
-                                entry.ShadeCode,
-                                entry.Capacity,
-                                entry.ModelNumber,
-                                entry.ExpiryDate,
-                                entry.Remarks,
                                 entry.UpdatedByUserID,
                                 entry.UpdatedSystemName
                             }, tran);
                         }
                         else
                         {
-                            // ============================================================
-                            // 6️⃣ INSERT NEW STOCK
-                            // ============================================================
+                            // ============================================
+                            // 4️⃣ INSERT NEW STOCK
+                            // ============================================
                             const string insertStockSql = @"
-                        INSERT INTO PurchaseEntryStock
-                        (
-                            PurchaseID, PONumber, PurchaseDate, CompanyID, CompanyName, BranchID, BranchName,
-                            SupplierID, SupplierName, ProductName, PurchaseRate, QuantityPurchased, CurrentStock,
-                            RetailPrice, WholesalePrice, SaleRate, MRP, GstPercentage, GstAmount,
-                            InclusiveAmount, ExclusiveAmount, DiscountAmount, DiscountPercentage,
-                            Color, Size, Weight, Volume, Material, FinishType, ShadeCode, Capacity, ModelNumber,
-                            ExpiryDate, TotalAmount, TaxAmount, GrandTotal, Remarks,
-                            CreatedByUserID, CreatedSystemName, CreatedAt, IsActive,
-                            TotalGrossAmount, TotalDiscAmount, TotalTaxableAmount,
-                            TotalGstAmount, TotalCessAmount, TotalNetAmount,
-                            TotalInvoiceAmount, TotalPaidAmount, TotalBalanceAmount, TotalRoundOff
-                        )
-                        VALUES
-                        (
-                            @PurchaseID, @PONumber, @PurchaseDate, @CompanyID, @CompanyName, @BranchID, @BranchName,
-                            @SupplierID, @SupplierName, @ProductName, @PurchaseRate, @Quantity, @Quantity,
-                            @RetailPrice, @WholesalePrice, @SaleRate, @MRP, @GstPercentage, @GstAmount,
-                            @InclusiveAmount, @ExclusiveAmount, @DiscountAmount, @DiscountPercentage,
-                            @Color, @Size, @Weight, @Volume, @Material, @FinishType, @ShadeCode, @Capacity, @ModelNumber,
-                            @ExpiryDate, @TotalAmount, @TaxAmount, @GrandTotal, @Remarks,
-                            @CreatedByUserID, @CreatedSystemName, SYSDATETIME(), 1,
-                            @TotalGrossAmount, @TotalDiscAmount, @TotalTaxableAmount,
-                            @TotalGstAmount, @TotalCessAmount, @TotalNetAmount,
-                            @TotalInvoiceAmount, @TotalPaidAmount, @TotalBalanceAmount, @TotalRoundOff
-                        );";
+                    INSERT INTO PurchaseEntryStock
+                    (
+                        PurchaseID, PONumber, PurchaseDate, CompanyID, CompanyName, BranchID, BranchName,
+                        SupplierID, SupplierName, ProductName, PurchaseRate, QuantityPurchased, CurrentStock,
+                        RetailPrice, WholesalePrice, SaleRate, MRP, GstPercentage, GstAmount,
+                        InclusiveAmount, ExclusiveAmount, DiscountAmount, DiscountPercentage,
+                        Color, Size, Weight, Volume, Material, FinishType, ShadeCode, Capacity, ModelNumber,
+                        ExpiryDate, TotalAmount, TaxAmount, GrandTotal, Remarks,
+                        CreatedByUserID, CreatedSystemName, CreatedAt, IsActive,
+                        TotalGrossAmount, TotalDiscAmount, TotalTaxableAmount,
+                        TotalGstAmount, TotalCessAmount, TotalNetAmount,
+                        TotalInvoiceAmount, TotalPaidAmount, TotalBalanceAmount, TotalRoundOff
+                    )
+                    VALUES
+                    (
+                        @PurchaseID, @PONumber, @PurchaseDate, @CompanyID, @CompanyName, @BranchID, @BranchName,
+                        @SupplierID, @SupplierName, @ProductName, @PurchaseRate, @Quantity, @Quantity,
+                        @RetailPrice, @WholesalePrice, @SaleRate, @MRP, @GstPercentage, @GstAmount,
+                        @InclusiveAmount, @ExclusiveAmount, @DiscountAmount, @DiscountPercentage,
+                        @Color, @Size, @Weight, @Volume, @Material, @FinishType, @ShadeCode, @Capacity, @ModelNumber,
+                        @ExpiryDate, @TotalAmount, @TaxAmount, @GrandTotal, @Remarks,
+                        @CreatedByUserID, @CreatedSystemName, SYSDATETIME(), 1,
+                        @TotalGrossAmount, @TotalDiscAmount, @TotalTaxableAmount,
+                        @TotalGstAmount, @TotalCessAmount, @TotalNetAmount,
+                        @TotalInvoiceAmount, @TotalPaidAmount, @TotalBalanceAmount, @TotalRoundOff
+                    );";
 
                             await _db.ExecuteAsync(insertStockSql, entry, tran);
                         }
                     }
 
-                    // ============================================================
-                    // 7️⃣ SUPPLIER OUTSTANDING (AFTER ALL ITEMS)
-                    // ============================================================
-
-
+                    // =======================
+                    // 5️⃣ SUPPLIER OUTSTANDING
+                    // =======================
                     decimal totalBill = header.TotalInvoiceAmount ?? 0m;
                     decimal totalPaid = header.TotalPaidAmount ?? 0m;
                     decimal totalBalance = totalBill - totalPaid;
 
                     string paymentStatus =
-                         totalBalance <= 0 ? "PAID"
-                       : totalPaid == 0 ? "UNPAID"
-                       : "PARTIAL";
+                            totalBalance <= 0 ? "PAID"
+                          : totalPaid == 0 ? "UNPAID"
+                          : "PARTIAL";
 
-                    // CHECK IF ALREADY EXISTS
                     const string checkOutstanding = @"
-                SELECT TOP 1 SupplierOutstandingID
-                FROM SupplierOutstanding
-                WHERE PurchaseID = @PurchaseID
-                  AND SupplierID = @SupplierID
-                  AND CompanyID = @CompanyID
-                  AND BranchID = @BranchID
-                  AND IsActive = 1";
+            SELECT TOP 1 SupplierOutstandingID
+            FROM SupplierOutstanding
+            WHERE PurchaseID = @PurchaseID
+              AND SupplierID = @SupplierID
+              AND CompanyID = @CompanyID
+              AND BranchID = @BranchID
+              AND IsActive = 1";
 
                     var existingOutID = await _db.ExecuteScalarAsync<int?>(checkOutstanding, new
                     {
@@ -997,18 +591,18 @@ namespace Cracker_Shop.Repository
 
                     if (existingOutID != null && existingOutID > 0)
                     {
-                        // UPDATE OUTSTANDING
+                        // UPDATE
                         const string updateOut = @"
-                    UPDATE SupplierOutstanding SET
-                        TotalBillAmount = @TotalBillAmount,
-                        TotalPaidAmount = @TotalPaidAmount,
-                        TotalBalanceAmount = @TotalBalanceAmount,
-                        PaymentMode = @PaymentMode,
-                        PaymentStatus = @PaymentStatus,
-                        UpdatedByUserID = @UpdatedByUserID,
-                        UpdatedSystemName = @UpdatedSystemName,
-                        UpdatedAt = SYSDATETIME()
-                    WHERE SupplierOutstandingID = @SupplierOutstandingID";
+                UPDATE SupplierOutstanding SET
+                    TotalBillAmount = @TotalBillAmount,
+                    TotalPaidAmount = @TotalPaidAmount,
+                    TotalBalanceAmount = @TotalBalanceAmount,
+                    PaymentMode = @PaymentMode,
+                    PaymentStatus = @PaymentStatus,
+                    UpdatedByUserID = @UpdatedByUserID,
+                    UpdatedSystemName = @UpdatedSystemName,
+                    UpdatedAt = SYSDATETIME()
+                WHERE SupplierOutstandingID = @SupplierOutstandingID";
 
                         await _db.ExecuteAsync(updateOut, new
                         {
@@ -1024,24 +618,24 @@ namespace Cracker_Shop.Repository
                     }
                     else
                     {
-                        // INSERT OUTSTANDING
+                        // INSERT
                         const string insertOut = @"
-                    INSERT INTO SupplierOutstanding
-                    (
-                        CompanyID, CompanyName, BranchID, BranchName,
-                        SupplierID, SupplierName, PurchaseID, PurchaseNumber,
-                        PurchaseDate, TotalBillAmount, TotalPaidAmount,
-                        TotalBalanceAmount, PaymentMode, PaymentStatus,
-                        Remarks, IsActive, CreatedByUserID, CreatedSystemName, CreatedAt
-                    )
-                    VALUES
-                    (
-                        @CompanyID, @CompanyName, @BranchID, @BranchName,
-                        @SupplierID, @SupplierName, @PurchaseID, @PONumber,
-                        @PurchaseDate, @TotalBillAmount, @TotalPaidAmount,
-                        @TotalBalanceAmount, @PaymentMode, @PaymentStatus,
-                        @Remarks, 1, @CreatedByUserID, @CreatedSystemName, SYSDATETIME()
-                    )";
+                INSERT INTO SupplierOutstanding
+                (
+                    CompanyID, CompanyName, BranchID, BranchName,
+                    SupplierID, SupplierName, PurchaseID, PurchaseNumber,
+                    PurchaseDate, TotalBillAmount, TotalPaidAmount,
+                    TotalBalanceAmount, PaymentMode, PaymentStatus,
+                    Remarks, IsActive, CreatedByUserID, CreatedSystemName, CreatedAt
+                )
+                VALUES
+                (
+                    @CompanyID, @CompanyName, @BranchID, @BranchName,
+                    @SupplierID, @SupplierName, @PurchaseID, @PONumber,
+                    @PurchaseDate, @TotalBillAmount, @TotalPaidAmount,
+                    @TotalBalanceAmount, @PaymentMode, @PaymentStatus,
+                    @Remarks, 1, @CreatedByUserID, @CreatedSystemName, SYSDATETIME()
+                )";
 
                         await _db.ExecuteAsync(insertOut, new
                         {
@@ -1065,8 +659,6 @@ namespace Cracker_Shop.Repository
                         }, tran);
                     }
 
-                    // ============================================================
-
                     tran.Commit();
                 }
                 catch
@@ -1078,6 +670,9 @@ namespace Cracker_Shop.Repository
 
             return lastPurchaseId;
         }
+
+
+      
 
 
         /*

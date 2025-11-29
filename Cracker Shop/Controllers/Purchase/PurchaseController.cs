@@ -79,26 +79,42 @@ namespace Cracker_Shop.Controllers.Purchase
             }
         }
 
-        // -------------------------------------------------------
-        // PURCHASE ENTRY WITH STOCK
-        // -------------------------------------------------------
+
         [HttpPost("purchaseentry")]
-        public async Task<IActionResult> AddOrUpdatePurchaseEntryWithStock([FromBody] List<PurchaseEntry> entries)
+        public async Task<IActionResult> AddOrUpdatePurchaseEntryWithStock(
+            [FromBody] List<PurchaseEntry> entries)
         {
             if (entries == null || entries.Count == 0)
-                return BadRequest("No purchase entries provided.");
+                return ResponseMessage(false, "No purchase entries provided.");
+
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState
+                    .Where(e => e.Value.Errors.Count > 0)
+                    .ToDictionary(
+                        e => e.Key,
+                        e => e.Value.Errors.Select(err => err.ErrorMessage).ToList()
+                    );
+
+                return ResponseMessage(false, "Validation Failed", errors);
+            }
 
             try
             {
                 var id = await _purchaseRepo.AddOrUpdatePurchaseEntryWithStockAsync(entries);
-                var message = $"Purchase entries processed successfully. Last PurchaseID: {id}";
-                return ResponseMessage(true, message, new { LastPurchaseID = id });
+
+                return ResponseMessage(
+                    true,
+                    $"Purchase entry saved successfully. Last PurchaseID: {id}",
+                    new { LastPurchaseID = id }
+                );
             }
             catch (Exception ex)
             {
                 return ResponseMessage(false, ex.Message);
             }
         }
+
 
         [HttpGet("GetPurchaseOrder")]
         public async Task<IActionResult> GetPurchaseOrders(
