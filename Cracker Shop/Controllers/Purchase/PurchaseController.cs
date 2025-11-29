@@ -117,5 +117,36 @@ namespace Cracker_Shop.Controllers.Purchase
             return Ok(result);
         }
 
+
+
+        [HttpGet("GetPurchaseStock")]
+        public async Task<IActionResult> GetPurchaseEntry(
+          int? companyId = null,
+          int? branchId = null,
+          int? supplierId = null,
+          DateTime? fromDate = null,
+          DateTime? toDate = null,
+          string? poNumber = null
+      )
+        {
+            var result = await _purchaseRepo.GetPurchaseStockAsync(
+                companyId,
+                branchId,
+                supplierId,
+                fromDate,
+                toDate,
+                poNumber
+            );
+
+            return Ok(result);
+        }
+        [HttpGet("GetNextPONumber")]
+        public async Task<IActionResult> GetNextPONumber(int companyId, string? branchId = null)
+        {
+            var nextPo = await _purchaseRepo.GetNextPONumberAsync(companyId, branchId);
+            return Ok(nextPo);
+        }
+
+
     }
 }

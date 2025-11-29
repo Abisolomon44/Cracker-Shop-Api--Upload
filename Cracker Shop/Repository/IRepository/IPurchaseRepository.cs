@@ -15,6 +15,20 @@ namespace Cracker_Shop.Repository.IRepository
             DateTime? poDate = null,
             string? poNumber = null   
         );
+        Task<IEnumerable<PurchaseEntry>> GetPurchaseStockAsync(
+        int? companyId = null,
+        int? branchId = null,
+        int? supplierId = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        string? poNumber = null
+    );
+
+
+        Task<string> GetNextPONumberAsync(int companyId, string? branchId);
+
+
+
 
     }
 }

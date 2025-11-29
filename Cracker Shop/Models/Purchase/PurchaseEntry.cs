@@ -121,6 +121,18 @@ namespace Cracker_Shop.Models.Purchase
         public string? CancelledBy { get; set; }
         public string? CancelReason { get; set; }
         public string? AccountingYear { get; set; }
+        // ------- TOTALS SECTION -------
+        public decimal TotalGrossAmount { get; set; }
+        public decimal TotalDiscAmount { get; set; }
+        public decimal TotalTaxableAmount { get; set; }
+        public decimal TotalGstAmount { get; set; }
+        public decimal TotalCessAmount { get; set; }
+        public decimal TotalNetAmount { get; set; }
+        public decimal? TotalInvoiceAmount { get; set; }
+        public decimal? TotalPaidAmount { get; set; }
+
+        public decimal TotalBalanceAmount { get; set; }
+        public decimal TotalRoundOff { get; set; }
     }
 
     [Table("PurchaseEntryStock")]
@@ -234,5 +246,22 @@ namespace Cracker_Shop.Models.Purchase
         public string? CancelledBy { get; set; }
         public string? CancelReason { get; set; }
         public string? AccountingYear { get; set; }
+
+
+        public decimal TotalGrossAmount { get; set; }
+        public decimal TotalDiscAmount { get; set; }
+        public decimal TotalTaxableAmount { get; set; }
+        public decimal TotalGstAmount { get; set; }
+        public decimal TotalCessAmount { get; set; }
+        public decimal TotalNetAmount { get; set; }
+        public decimal? TotalInvoiceAmount { get; set; }
+        public decimal? TotalPaidAmount { get; set; }
+
+        public decimal TotalBalanceAmount { get; set; }
+        public decimal TotalRoundOff { get; set; }
+
+
+
+
     }
 }
