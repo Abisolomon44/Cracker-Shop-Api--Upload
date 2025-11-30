@@ -133,7 +133,13 @@ namespace Cracker_Shop.Models.Purchase
 
         public decimal TotalBalanceAmount { get; set; }
         public decimal TotalRoundOff { get; set; }
+        public decimal? QuantityPurchased { get; set; }
+        public decimal? QuantitySold { get; set; }
+        public decimal? QuantityReturned { get; set; }
+
+
     }
+
 
     [Table("PurchaseEntryStock")]
     public class PurchaseEntryStock
