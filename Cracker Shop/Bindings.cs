@@ -18,6 +18,8 @@ namespace Cracker_Shop.DependencyInjection
 
             services.AddScoped<IMasterRepository, MasterRepository>();
             services.AddScoped<IPurchaseRepository, PurchaseRepository>();
+            services.AddScoped<ISalesRepository, SalesRepository>();
+
 
 
         }
