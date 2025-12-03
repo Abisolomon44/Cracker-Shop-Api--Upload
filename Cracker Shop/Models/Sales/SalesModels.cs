@@ -133,22 +133,15 @@
 
     public class ProductStockPriceDto
     {
-        public string ProductCode { get; set; }
-        public string ProductName { get; set; }
+        public string? ProductCode { get; set; }
+        public string? ProductName { get; set; }
 
         public decimal RetailPrice { get; set; }
         public decimal WholesalePrice { get; set; }
+        public decimal MRP { get; set; }
+
         public decimal GstPercentage { get; set; }
         public decimal CurrentStock { get; set; }
-
-        // Purchase Entry Fields
-        public decimal PurchaseRate { get; set; }
-        public decimal Quantity { get; set; }
-        public decimal SaleRate { get; set; }
-        public decimal MRP { get; set; }
-        public string SupplierName { get; set; }
-        public string PONumber { get; set; }
-        public DateTime? PurchaseDate { get; set; }
     }
     public class BusinessType
     {

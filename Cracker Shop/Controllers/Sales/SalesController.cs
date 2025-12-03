@@ -81,12 +81,17 @@ namespace Cracker_Shop.Controllers.Sales
         }
         [HttpGet("SalesProducts")]
         public async Task<IActionResult> GetProductStockAndPrice(
-          int? companyId = null,
-          int? branchId = null)
+      int? companyId = null,
+      int? branchId = null,
+      int? businessTypeId = null)
         {
             try
             {
-                var result = await _salesRepo.GetProductStockAndPriceAsync(companyId, branchId);
+                var result = await _salesRepo.GetProductStockAndPriceAsync(
+                    companyId,
+                    branchId,
+                    businessTypeId   
+                );
 
                 return ResponseMessage(
                     true,
@@ -99,6 +104,7 @@ namespace Cracker_Shop.Controllers.Sales
                 return ResponseMessage(false, ex.Message);
             }
         }
+
 
         [HttpPost("AddUpdateDeleteBusinessType")]
         public async Task<IActionResult> Save([FromBody] BusinessType model)

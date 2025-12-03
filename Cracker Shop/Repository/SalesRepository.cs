@@ -366,13 +366,15 @@ namespace Cracker_Shop.Repository
         }
 
         public async Task<IEnumerable<ProductStockPriceDto>> GetProductStockAndPriceAsync(
-     int? companyId = null,
-     int? branchId = null)
+        int? companyId = null,
+        int? branchId = null,
+        int? businessTypeId = null)
         {
             var parameters = new DynamicParameters();
 
             parameters.Add("@CompanyID", companyId);
             parameters.Add("@BranchID", branchId);
+            parameters.Add("@BusinessTypeID", businessTypeId);  
 
             if (_db.State == ConnectionState.Closed)
                 _db.Open();
@@ -385,6 +387,7 @@ namespace Cracker_Shop.Repository
 
             return list;
         }
+
 
 
         public async Task<int> SaveBUsinessTypeAsync(BusinessType model)
@@ -428,11 +431,13 @@ namespace Cracker_Shop.Repository
         SELECT BusinessTypeID, CompanyID, BusinessTypeName, Description,
                IsActive, CreatedBy, CreatedDate, UpdatedBy, UpdatedDate, CreatedSystemName
         FROM BusinessType
+        WHERE IsActive = 1
         ORDER BY BusinessTypeName ASC;
     ";
 
             return await _db.QueryAsync<BusinessType>(query);
         }
+
 
         public async Task<int> SaveAsync(GstTransactionType model, string action)
         {
@@ -484,18 +489,19 @@ namespace Cracker_Shop.Repository
 
             return 0;
         }
-
         public async Task<IEnumerable<GstTransactionType>> GetAllGstAsync()
         {
             var q = @"
-            SELECT GstTransactionTypeID, TransactionTypeName, Description,
-                   IsActive, CreatedBy, CreatedDate, UpdatedBy, UpdatedDate, CreatedSystemName
-            FROM GstTransactionType
-            ORDER BY TransactionTypeName ASC;
-        ";
+        SELECT GstTransactionTypeID, TransactionTypeName, Description,
+               IsActive, CreatedBy, CreatedDate, UpdatedBy, UpdatedDate, CreatedSystemName
+        FROM GstTransactionType
+        WHERE IsActive = 1
+        ORDER BY TransactionTypeName ASC;
+    ";
 
             return await _db.QueryAsync<GstTransactionType>(q);
         }
-    }
 
     }
+
+}

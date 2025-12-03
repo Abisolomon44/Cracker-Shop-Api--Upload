@@ -8,11 +8,9 @@ namespace Cracker_Shop.Repository.IRepository
       {
         Task<int> AddOrUpdateSalesEntryWithStockAsync(List<SalesEntryMaster> entries);
         Task<IEnumerable<ProductStockPriceDto>> GetProductStockAndPriceAsync(
-        int? companyId = null,
-        int? branchId = null
-
-
-    );
+           int? companyId = null,
+           int? branchId = null,
+           int? businessTypeId = null);
 
         Task<int> SaveBUsinessTypeAsync(BusinessType model);
         Task<IEnumerable<BusinessType>> GetAllAsync();
