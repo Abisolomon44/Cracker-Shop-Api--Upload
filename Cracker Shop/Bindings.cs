@@ -14,8 +14,6 @@ namespace Cracker_Shop.DependencyInjection
             services.AddScoped<IDbConnection>(sp => new SqlConnection(connectionString));
 
             services.AddScoped<ICompanyRepository, CompanyRepository>();
-
-
             services.AddScoped<IMasterRepository, MasterRepository>();
             services.AddScoped<IPurchaseRepository, PurchaseRepository>();
             services.AddScoped<ISalesRepository, SalesRepository>();

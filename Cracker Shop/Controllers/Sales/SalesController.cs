@@ -47,7 +47,7 @@ namespace Cracker_Shop.Controllers.Sales
 
         [HttpPost("salesentry")]
         public async Task<IActionResult> AddOrUpdateSalesEntryWithStock(
-            [FromBody] List<SalesEntryMaster> entries)
+       [FromBody] List<SalesEntryMaster> entries)
         {
             if (entries == null || entries.Count == 0)
                 return ResponseMessage(false, "No sales entries provided.");
@@ -71,7 +71,7 @@ namespace Cracker_Shop.Controllers.Sales
                 return ResponseMessage(
                     true,
                     $"Sales entry saved successfully. Last InvoiceID: {id}",
-                    new { LastInvoiceID = id }
+                    new { lastInvoiceID = id }  
                 );
             }
             catch (Exception ex)
@@ -79,6 +79,7 @@ namespace Cracker_Shop.Controllers.Sales
                 return ResponseMessage(false, ex.Message);
             }
         }
+
         [HttpGet("SalesProducts")]
         public async Task<IActionResult> GetProductStockAndPrice(
       int? companyId = null,
@@ -114,7 +115,7 @@ namespace Cracker_Shop.Controllers.Sales
 
             try
             {
-                var id = await _salesRepo.SaveBUsinessTypeAsync(model);
+                var id = await _salesRepo.SaveBusinessTypeAsync(model);
 
                 string msg = model.BusinessTypeID == 0
                     ? "Business Type added successfully."
@@ -152,7 +153,7 @@ namespace Cracker_Shop.Controllers.Sales
 
             try
             {
-                var id = await _salesRepo.SaveAsync(model, action.ToLower());
+                var id = await _salesRepo.SaveGstAsync(model, action.ToLower());
 
                 string msg = action.ToLower() switch
                 {
@@ -183,6 +184,19 @@ namespace Cracker_Shop.Controllers.Sales
             {
                 return ResponseMessage(false, ex.Message);
             }
+        }
+
+        [HttpGet("GetNextInvoiceNumber")]
+        public async Task<IActionResult> GetNextInvoiceNumber(int companyId, string? branchId = null)
+        {
+            var nextInvoice = await _salesRepo.GetNextInvoiceNumberAsync(companyId, branchId);
+            return Ok(nextInvoice);
+        }
+        [HttpGet("GetSalesEntries")]
+        public async Task<IActionResult> GetSalesEntries(int? companyId = null, int? branchId = null)
+        {
+            var result = await _salesRepo.GetSalesEntriesAsync(companyId, branchId);
+            return Ok(result);
         }
     }
 }

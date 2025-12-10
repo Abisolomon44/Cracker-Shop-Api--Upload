@@ -12,11 +12,18 @@ namespace Cracker_Shop.Repository.IRepository
            int? branchId = null,
            int? businessTypeId = null);
 
-        Task<int> SaveBUsinessTypeAsync(BusinessType model);
+        Task<int> SaveBusinessTypeAsync(BusinessType model);
         Task<IEnumerable<BusinessType>> GetAllAsync();
 
-        Task<int> SaveAsync(GstTransactionType model, string action);
+        Task<int> SaveGstAsync(GstTransactionType model, string action);
         Task<IEnumerable<GstTransactionType>> GetAllGstAsync();
+        Task<string> GetNextInvoiceNumberAsync(int companyId, string? branchId);
+        Task<IEnumerable<SalesEntryMaster>> GetSalesEntriesAsync(
+        int? companyId,
+        int? branchId,
+        string invoiceNumber = null);
+
+
 
     }
 

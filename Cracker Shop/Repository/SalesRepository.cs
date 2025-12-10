@@ -41,6 +41,8 @@ namespace Cracker_Shop.Repository
                 _db.Open();
 
             int lastInvoiceID = 0;
+            int lastInvoiceNumber = 0;
+
 
             using (var tran = _db.BeginTransaction())
             {
@@ -48,125 +50,149 @@ namespace Cracker_Shop.Repository
                 {
                     // 1️⃣ INSERT SALES ENTRY MASTER
                     const string insertSalesSql = @"
-            INSERT INTO SalesEntryMaster
-            (
-                InvoiceNumber, InvoiceDate, CompanyID, CompanyName, BranchID, BranchName,
-                CustomerID, CustomerName, CustomerContact, CustomerGSTIN, CustomerState, CompanyState,
-                AccountingYear, BillingType, IsGSTApplicable, GSTType,
-                ProductID, Barcode, ProductCode, ProductName, BrandID, CategoryID, SubCategoryID,
-                HSNID, UnitID, SecondaryUnitID, Color, Size, Weight, Volume, Material,
-                FinishType, ShadeCode, Capacity, ModelNumber, ExpiryDate, ManufacturingDate,
-                Quantity, ProductRate, SaleRate, RetailPrice, WholesalePrice, MRP,
-                DiscountPercentage, DiscountAmount, InclusiveAmount, ExclusiveAmount,
-                GstPercentage, GstAmount, CGSTRate, CGSTAmount, SGSTRate, SGSTAmount,
-                IGSTRate, IGSTAmount, CESSRate, CESSAmount, GrossAmount,
-                CustomerDiscount, NetAmount, TaxableAmount, GrandTotal,
-                BillingMode, CashAmount, CardAmount, UPIAmount, AdvanceAmount, PaidAmount, BalanceAmount,
-                Status, Remarks, IsActive, CreatedBy, CreatedDate,
-                TotalGrossAmount, TotalDiscAmount, TotalTaxableAmount, TotalGstAmount,
-                TotalCESSAmount, TotalNetAmount, TotalInvoiceAmount, TotalPaidAmount,
-                TotalBalanceAmount, TotalRoundOff, TotalQuantity
-            )
-            VALUES
-            (
-                @InvoiceNumber, @InvoiceDate, @CompanyID, @CompanyName, @BranchID, @BranchName,
-                @CustomerID, @CustomerName, @CustomerContact, @CustomerGSTIN, @CustomerState, @CompanyState,
-                @AccountingYear, @BillingType, @IsGSTApplicable, @GSTType,
-                @ProductID, @Barcode, @ProductCode, @ProductName, @BrandID, @CategoryID, @SubCategoryID,
-                @HSNID, @UnitID, @SecondaryUnitID, @Color, @Size, @Weight, @Volume, @Material,
-                @FinishType, @ShadeCode, @Capacity, @ModelNumber, @ExpiryDate, @ManufacturingDate,
-                @Quantity, @ProductRate, @SaleRate, @RetailPrice, @WholesalePrice, @MRP,
-                @DiscountPercentage, @DiscountAmount, @InclusiveAmount, @ExclusiveAmount,
-                @GstPercentage, @GstAmount, @CGSTRate, @CGSTAmount, @SGSTRate, @SGSTAmount,
-                @IGSTRate, @IGSTAmount, @CESSRate, @CESSAmount, @GrossAmount,
-                @CustomerDiscount, @NetAmount, @TaxableAmount, @GrandTotal,
-                @BillingMode, @CashAmount, @CardAmount, @UPIAmount, @AdvanceAmount, @PaidAmount, @BalanceAmount,
-                @Status, @Remarks, 1, @CreatedBy, SYSDATETIME(),
-                @TotalGrossAmount, @TotalDiscAmount, @TotalTaxableAmount, @TotalGstAmount,
-                @TotalCESSAmount, @TotalNetAmount, @TotalInvoiceAmount, @TotalPaidAmount,
-                @TotalBalanceAmount, @TotalRoundOff, @TotalQuantity
-            );
-            SELECT CAST(SCOPE_IDENTITY() AS INT);";
+INSERT INTO SalesEntryMaster
+(
+    InvoiceNumber, InvoiceDate, CompanyID, CompanyName, BranchID, BranchName,
+    CustomerID, CustomerName, CustomerContact, CustomerGSTIN, CustomerState, CompanyState,
+    AccountingYear, BillingType, IsGSTApplicable, GSTType,
+    ProductID, Barcode, ProductCode, ProductName, BrandID, CategoryID, SubCategoryID,
+    HSNID, UnitID, SecondaryUnitID, Color, Size, Weight, Volume, Material,
+    FinishType, ShadeCode, Capacity, ModelNumber, ExpiryDate, ManufacturingDate,
+    Quantity, ProductRate, SaleRate, RetailPrice, WholesalePrice, MRP,
+    DiscountPercentage, DiscountAmount, InclusiveAmount, ExclusiveAmount,
+    GstPercentage, GstAmount, CGSTRate, CGSTAmount, SGSTRate, SGSTAmount,
+    IGSTRate, IGSTAmount, CESSRate, CESSAmount, GrossAmount,
+    CustomerDiscount, NetAmount, TaxableAmount, GrandTotal,
+    BillingMode, CashAmount, CardAmount, UPIAmount, AdvanceAmount, PaidAmount, BalanceAmount,
+    Status, Remarks, IsActive, CreatedBy, CreatedDate,
+    TotalGrossAmount, TotalDiscAmount, TotalTaxableAmount, TotalGstAmount,
+    TotalCESSAmount, TotalNetAmount, TotalInvoiceAmount, TotalPaidAmount,
+    TotalBalanceAmount, TotalRoundOff, TotalQuantity
+)
+VALUES
+(
+    @InvoiceNumber, @InvoiceDate, @CompanyID, @CompanyName, @BranchID, @BranchName,
+    @CustomerID, @CustomerName, @CustomerContact, @CustomerGSTIN, @CustomerState, @CompanyState,
+    @AccountingYear, @BillingType, @IsGSTApplicable, @GSTType,
+    @ProductID, @Barcode, @ProductCode, @ProductName, @BrandID, @CategoryID, @SubCategoryID,
+    @HSNID, @UnitID, @SecondaryUnitID, @Color, @Size, @Weight, @Volume, @Material,
+    @FinishType, @ShadeCode, @Capacity, @ModelNumber, @ExpiryDate, @ManufacturingDate,
+    @Quantity, @ProductRate, @SaleRate, @RetailPrice, @WholesalePrice, @MRP,
+    @DiscountPercentage, @DiscountAmount, @InclusiveAmount, @ExclusiveAmount,
+    @GstPercentage, @GstAmount, @CGSTRate, @CGSTAmount, @SGSTRate, @SGSTAmount,
+    @IGSTRate, @IGSTAmount, @CESSRate, @CESSAmount, @GrossAmount,
+    @CustomerDiscount, @NetAmount, @TaxableAmount, @GrandTotal,
+    @BillingMode, @CashAmount, @CardAmount, @UPIAmount, @AdvanceAmount, @PaidAmount, @BalanceAmount,
+    @Status, @Remarks, 1, @CreatedBy, SYSDATETIME(),
+    @TotalGrossAmount, @TotalDiscAmount, @TotalTaxableAmount, @TotalGstAmount,
+    @TotalCESSAmount, @TotalNetAmount, @TotalInvoiceAmount, @TotalPaidAmount,
+    @TotalBalanceAmount, @TotalRoundOff, @TotalQuantity
+);
+SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
                     foreach (var entry in entries)
-
-
                     {
-                        ValidateSalesEntry(entry); // <-- MAIN VALIDATION
+                        ValidateSalesEntry(entry);
+
                         lastInvoiceID = await _db.ExecuteScalarAsync<int>(insertSalesSql, entry, tran);
                         entry.InvoiceID = lastInvoiceID;
 
-                        // 2️⃣ UPDATE STOCK (REDUCE)
+                        // 2️⃣ STOCK UPDATE — FIXED & OPTIMIZED
                         const string stockCheckSql = @"
-                SELECT TOP 1 StockID, CurrentStock
-                FROM PurchaseEntryStock
-                WHERE ProductName = @ProductName
-                AND CompanyID = @CompanyID
-                AND BranchID = @BranchID
-                AND IsActive = 1";
+SELECT TOP 1 StockID, CurrentStock
+FROM PurchaseEntryStock
+WHERE ProductCode = @ProductCode
+AND CompanyID = @CompanyID
+AND BranchID = @BranchID
+AND IsActive = 1";
 
-                        var stockRow = await _db.QueryFirstOrDefaultAsync<dynamic>(stockCheckSql, entry, tran);
+                        var stockRow = await _db.QueryFirstOrDefaultAsync<dynamic>(stockCheckSql, new
+                        {
+                            entry.ProductCode,
+                            entry.CompanyID,
+                            entry.BranchID
+                        }, tran);
 
                         if (stockRow != null)
                         {
                             decimal currentStock = stockRow.CurrentStock ?? 0m;
-                            decimal soldQty = entry.Quantity;
+                            decimal soldQty = entry.Quantity == null
+       ? 0m
+       : Convert.ToDecimal(entry.Quantity);
 
                             decimal newStock = currentStock - soldQty;
                             if (newStock < 0) newStock = 0;
 
+
+
+
+
                             const string updateStockSql = @"
-                    UPDATE PurchaseEntryStock SET
-                        CurrentStock = @CurrentStock,
-                        UpdatedByUserID = @CreatedBy,
-                        UpdatedSystemName = @CreatedBy,
-                        UpdatedAt = SYSDATETIME()
-                    WHERE StockID = @StockID";
+UPDATE PurchaseEntryStock SET
+    CurrentStock = @CurrentStock,
+    QuantitySold = ISNULL(QuantitySold, 0) + @SoldQuantity,
+    UpdatedByUserID = NULL,
+    UpdatedSystemName = @UpdatedBy,
+    UpdatedAt = SYSDATETIME()
+WHERE StockID = @StockID";
 
                             await _db.ExecuteAsync(updateStockSql, new
                             {
-                                StockID = (int)stockRow.StockID,
+                                StockID = (long)stockRow.StockID,
                                 CurrentStock = newStock,
-                                entry.CreatedBy
+                                SoldQuantity = soldQty,      // 🔥 THIS UPDATES QuantitySold
+                                UpdatedBy = entry.CreatedBy
                             }, tran);
+
+
+
+
+
+
+
+                        }
+                        else
+                        {
+                            // DEBUG: No stock found
+                            Console.WriteLine($"⚠ NO STOCK FOUND FOR PRODUCT {entry.ProductCode} (Company {entry.CompanyID}, Branch {entry.BranchID})");
                         }
                     }
 
-                    // 3️⃣ INSERT/UPDATE SALES INVOICE TOTAL
+                    // 3️⃣ INSERT/UPDATE SALES INVOICE TOTAL (unchanged)
                     const string checkTotalSql = @"
-            SELECT InvoiceID
-            FROM SalesInvoiceTotal
-            WHERE InvoiceNumber = @InvoiceNumber
-            AND CompanyID = @CompanyID
-            AND BranchID = @BranchID";
+SELECT InvoiceID
+FROM SalesInvoiceTotal
+WHERE InvoiceNumber = @InvoiceNumber
+AND CompanyID = @CompanyID
+AND BranchID = @BranchID";
 
                     var existingTotalID = await _db.ExecuteScalarAsync<int?>(checkTotalSql, header, tran);
 
                     if (existingTotalID != null)
                     {
                         const string updateTotalSql = @"
-                UPDATE SalesInvoiceTotal SET
-                    TotalQuantity = @TotalQuantity,
-                    TotalSaleRate = @TotalSaleRate,
-                    TotalDiscountAmount = @TotalDiscountAmount,
-                    TotalCGSTAmount = @TotalCGSTAmount,
-                    TotalSGSTAmount = @TotalSGSTAmount,
-                    TotalIGSTAmount = @TotalIGSTAmount,
-                    TotalCESSAmount = @TotalCESSAmount,
-                    TotalGrossAmount = @TotalGrossAmount,
-                    TotalTaxableAmount = @TotalTaxableAmount,
-                    GrandTotal = @GrandTotal,
-                    BillingMode = @BillingMode,
-                    CashAmount = @CashAmount,
-                    CardAmount = @CardAmount,
-                    UPIAmount = @UPIAmount,
-                    AdvanceAmount = @AdvanceAmount,
-                    PaidAmount = @PaidAmount,
-                    BalanceAmount = @BalanceAmount,
-                    Status = @Status,
-                    UpdatedBy = @UpdatedBy,
-                    UpdatedDate = SYSDATETIME()
-                WHERE InvoiceID = @InvoiceID";
+UPDATE SalesInvoiceTotal SET
+    TotalQuantity = @TotalQuantity,
+    TotalSaleRate = @TotalSaleRate,
+    TotalDiscountAmount = @TotalDiscountAmount,
+    TotalCGSTAmount = @TotalCGSTAmount,
+    TotalSGSTAmount = @TotalSGSTAmount,
+    TotalIGSTAmount = @TotalIGSTAmount,
+    TotalCESSAmount = @TotalCESSAmount,
+    TotalGrossAmount = @TotalGrossAmount,
+    TotalTaxableAmount = @TotalTaxableAmount,
+    GrandTotal = @GrandTotal,
+    BillingMode = @BillingMode,
+    CashAmount = @CashAmount,
+    CardAmount = @CardAmount,
+    UPIAmount = @UPIAmount,
+    AdvanceAmount = @AdvanceAmount,
+    PaidAmount = @PaidAmount,
+    BalanceAmount = @BalanceAmount,
+    Status = @Status,
+    UpdatedBy = @UpdatedBy,
+    UpdatedDate = SYSDATETIME()
+WHERE InvoiceID = @InvoiceID";
 
                         await _db.ExecuteAsync(updateTotalSql, new
                         {
@@ -195,33 +221,33 @@ namespace Cracker_Shop.Repository
                     else
                     {
                         const string insertTotalSql = @"
-                INSERT INTO SalesInvoiceTotal
-                (
-                    InvoiceNumber, InvoiceDate, CompanyID, CompanyName, BranchID, BranchName,
-                    CustomerID, CustomerName, CustomerContact, CustomerGSTIN, CustomerState,
-                    AccountingYear, BillingType, GSTType,
-                    TotalQuantity, TotalSaleRate, TotalDiscountAmount,
-                    TotalCGSTAmount, TotalSGSTAmount, TotalIGSTAmount, TotalCESSAmount,
-                    TotalGrossAmount, TotalTaxableAmount, GrandTotal,
-                    BillingMode, CashAmount, CardAmount, UPIAmount, AdvanceAmount,
-                    PaidAmount, BalanceAmount, Status, CreatedBy, CreatedDate
-                )
-                VALUES
-                (
-                    @InvoiceNumber, @InvoiceDate, @CompanyID, @CompanyName, @BranchID, @BranchName,
-                    @CustomerID, @CustomerName, @CustomerContact, @CustomerGSTIN, @CustomerState,
-                    @AccountingYear, @BillingType, @GSTType,
-                    @TotalQuantity, @TotalSaleRate, @TotalDiscountAmount,
-                    @TotalCGSTAmount, @TotalSGSTAmount, @TotalIGSTAmount, @TotalCESSAmount,
-                    @TotalGrossAmount, @TotalTaxableAmount, @GrandTotal,
-                    @BillingMode, @CashAmount, @CardAmount, @UPIAmount, @AdvanceAmount,
-                    @PaidAmount, @BalanceAmount, @Status, @CreatedBy, SYSDATETIME()
-                )";
+INSERT INTO SalesInvoiceTotal
+(
+    InvoiceNumber, InvoiceDate, CompanyID, CompanyName, BranchID, BranchName,
+    CustomerID, CustomerName, CustomerContact, CustomerGSTIN, CustomerState,
+    AccountingYear, BillingType, GSTType,
+    TotalQuantity, TotalSaleRate, TotalDiscountAmount,
+    TotalCGSTAmount, TotalSGSTAmount, TotalIGSTAmount, TotalCESSAmount,
+    TotalGrossAmount, TotalTaxableAmount, GrandTotal,
+    BillingMode, CashAmount, CardAmount, UPIAmount, AdvanceAmount,
+    PaidAmount, BalanceAmount, Status, CreatedBy, CreatedDate
+)
+VALUES
+(
+    @InvoiceNumber, @InvoiceDate, @CompanyID, @CompanyName, @BranchID, @BranchName,
+    @CustomerID, @CustomerName, @CustomerContact, @CustomerGSTIN, @CustomerState,
+    @AccountingYear, @BillingType, @GSTType,
+    @TotalQuantity, @TotalSaleRate, @TotalDiscountAmount,
+    @TotalCGSTAmount, @TotalSGSTAmount, @TotalIGSTAmount, @TotalCESSAmount,
+    @TotalGrossAmount, @TotalTaxableAmount, @GrandTotal,
+    @BillingMode, @CashAmount, @CardAmount, @UPIAmount, @AdvanceAmount,
+    @PaidAmount, @BalanceAmount, @Status, @CreatedBy, SYSDATETIME()
+)";
 
                         await _db.ExecuteAsync(insertTotalSql, header, tran);
                     }
 
-                    // 4️⃣ CUSTOMER OUTSTANDING
+                    // 4️⃣ CUSTOMER OUTSTANDING (unchanged)
                     decimal invoiceAmount = header.GrandTotal ?? 0m;
                     decimal paidAmount = header.PaidAmount ?? 0m;
                     decimal balanceAmount = invoiceAmount - paidAmount;
@@ -232,13 +258,13 @@ namespace Cracker_Shop.Repository
                           : "PARTIAL";
 
                     const string checkOutSql = @"
-            SELECT OutstandingID
-            FROM CustomerOutstanding
-            WHERE InvoiceID = @InvoiceID
-            AND CustomerID = @CustomerID
-            AND CompanyID = @CompanyID
-            AND BranchID = @BranchID
-            AND IsActive = 1";
+SELECT OutstandingID
+FROM CustomerOutstanding
+WHERE InvoiceID = @InvoiceID
+AND CustomerID = @CustomerID
+AND CompanyID = @CompanyID
+AND BranchID = @BranchID
+AND IsActive = 1";
 
                     var existingOutID = await _db.ExecuteScalarAsync<int?>(checkOutSql, new
                     {
@@ -251,15 +277,15 @@ namespace Cracker_Shop.Repository
                     if (existingOutID != null)
                     {
                         const string updateOutSql = @"
-                UPDATE CustomerOutstanding SET
-                    InvoiceAmount = @InvoiceAmount,
-                    PaidAmount = @PaidAmount,
-                    BalanceAmount = @BalanceAmount,
-                    BillingMode = @BillingMode,
-                    Status = @Status,
-                    UpdatedBy = @UpdatedBy,
-                    UpdatedDate = SYSDATETIME()
-                WHERE OutstandingID = @OutstandingID";
+UPDATE CustomerOutstanding SET
+    InvoiceAmount = @InvoiceAmount,
+    PaidAmount = @PaidAmount,
+    BalanceAmount = @BalanceAmount,
+    BillingMode = @BillingMode,
+    Status = @Status,
+    UpdatedBy = @UpdatedBy,
+    UpdatedDate = SYSDATETIME()
+WHERE OutstandingID = @OutstandingID";
 
                         await _db.ExecuteAsync(updateOutSql, new
                         {
@@ -275,22 +301,22 @@ namespace Cracker_Shop.Repository
                     else
                     {
                         const string insertOutSql = @"
-                INSERT INTO CustomerOutstanding
-                (
-                    CompanyID, CompanyName, BranchID, BranchName,
-                    CustomerID, CustomerName, CustomerContact, CustomerGSTIN, CustomerState,
-                    InvoiceID, InvoiceNumber, InvoiceDate, BillingMode,
-                    InvoiceAmount, PaidAmount, BalanceAmount, Status,
-                    Remarks, IsActive, CreatedBy, CreatedDate
-                )
-                VALUES
-                (
-                    @CompanyID, @CompanyName, @BranchID, @BranchName,
-                    @CustomerID, @CustomerName, @CustomerContact, @CustomerGSTIN, @CustomerState,
-                    @InvoiceID, @InvoiceNumber, @InvoiceDate, @BillingMode,
-                    @InvoiceAmount, @PaidAmount, @BalanceAmount, @Status,
-                    @Remarks, 1, @CreatedBy, SYSDATETIME()
-                )";
+INSERT INTO CustomerOutstanding
+(
+    CompanyID, CompanyName, BranchID, BranchName,
+    CustomerID, CustomerName, CustomerContact, CustomerGSTIN, CustomerState,
+    InvoiceID, InvoiceNumber, InvoiceDate, BillingMode,
+    InvoiceAmount, PaidAmount, BalanceAmount, Status,
+    Remarks, IsActive, CreatedBy, CreatedDate
+)
+VALUES
+(
+    @CompanyID, @CompanyName, @BranchID, @BranchName,
+    @CustomerID, @CustomerName, @CustomerContact, @CustomerGSTIN, @CustomerState,
+    @InvoiceID, @InvoiceNumber, @InvoiceDate, @BillingMode,
+    @InvoiceAmount, @PaidAmount, @BalanceAmount, @Status,
+    @Remarks, 1, @CreatedBy, SYSDATETIME()
+)";
 
                         await _db.ExecuteAsync(insertOutSql, new
                         {
@@ -326,7 +352,11 @@ namespace Cracker_Shop.Repository
             }
 
             return lastInvoiceID;
+            return lastInvoiceNumber;
+
+
         }
+
         private void ValidateSalesEntry(SalesEntryMaster entry)
         {
             // --- REQUIRED NUMERIC IDs ---
@@ -390,7 +420,7 @@ namespace Cracker_Shop.Repository
 
 
 
-        public async Task<int> SaveBUsinessTypeAsync(BusinessType model)
+        public async Task<int> SaveBusinessTypeAsync(BusinessType model)
         {
             if (model.BusinessTypeID == 0)
             {
@@ -439,9 +469,8 @@ namespace Cracker_Shop.Repository
         }
 
 
-        public async Task<int> SaveAsync(GstTransactionType model, string action)
+        public async Task<int> SaveGstAsync(GstTransactionType model, string action)
         {
-            // INSERT → ID = 0
             if (action == "insert" && model.GstTransactionTypeID == 0)
             {
                 var q = @"
@@ -458,7 +487,6 @@ namespace Cracker_Shop.Repository
                 return await _db.ExecuteScalarAsync<int>(q, model);
             }
 
-            // UPDATE → ID > 0
             if (action == "update" && model.GstTransactionTypeID > 0)
             {
                 var q = @"
@@ -474,7 +502,6 @@ namespace Cracker_Shop.Repository
                 return await _db.ExecuteAsync(q, model);
             }
 
-            // DELETE (Soft Delete) → ID > 0
             if (action == "delete" && model.GstTransactionTypeID > 0)
             {
                 var q = @"
@@ -501,6 +528,57 @@ namespace Cracker_Shop.Repository
 
             return await _db.QueryAsync<GstTransactionType>(q);
         }
+
+
+        public async Task<string> GetNextInvoiceNumberAsync(int companyId, string? branchId)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@CompanyID", companyId);
+
+            parameters.Add("@BranchID", string.IsNullOrWhiteSpace(branchId) ? "" : branchId);
+
+            if (_db.State == ConnectionState.Closed)
+                _db.Open();
+
+            var result = await _db.QueryFirstOrDefaultAsync<string?>(
+                "sp_GetNextInvoiceNumber",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            return result ?? "INV00001";  
+        }
+
+
+        public async Task<IEnumerable<SalesEntryMaster>> GetSalesEntriesAsync(
+            int? companyId,
+            int? branchId,
+            string invoiceNumber = null)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@CompanyID", companyId);
+            parameters.Add("@BranchID", branchId);
+            parameters.Add("@InvoiceNumber", invoiceNumber);
+
+            if (_db.State == ConnectionState.Closed)
+                _db.Open();
+
+            try
+            {
+                var result = await _db.QueryAsync<SalesEntryMaster>(
+                    "sp_GetSalesEntries",
+                    parameters,
+                    commandType: CommandType.StoredProcedure);
+
+                return result;
+            }
+            finally
+            {
+                if (_db.State == ConnectionState.Open)
+                    _db.Close();
+            }
+        }
+
 
     }
 
