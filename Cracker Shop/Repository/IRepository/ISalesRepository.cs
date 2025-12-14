@@ -6,7 +6,7 @@ namespace Cracker_Shop.Repository.IRepository
 
      public interface ISalesRepository
       {
-        Task<int> AddOrUpdateSalesEntryWithStockAsync(List<SalesEntryMaster> entries);
+        Task<InvoiceSaveResult> AddOrUpdateSalesEntryWithStockAsync(List<SalesEntryMaster> entries);
         Task<IEnumerable<ProductStockPriceDto>> GetProductStockAndPriceAsync(
            int? companyId = null,
            int? branchId = null,

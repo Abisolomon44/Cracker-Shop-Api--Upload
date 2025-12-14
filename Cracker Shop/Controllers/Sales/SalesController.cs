@@ -66,13 +66,18 @@ namespace Cracker_Shop.Controllers.Sales
 
             try
             {
-                var id = await _salesRepo.AddOrUpdateSalesEntryWithStockAsync(entries);
+                var result = await _salesRepo.AddOrUpdateSalesEntryWithStockAsync(entries);
 
                 return ResponseMessage(
                     true,
-                    $"Sales entry saved successfully. Last InvoiceID: {id}",
-                    new { lastInvoiceID = id }  
+                    "Sales entry saved successfully.",
+                    new
+                    {
+                        lastInvoiceID = result.InvoiceID,
+                        lastInvoiceNumber = result.InvoiceNumber
+                    }
                 );
+
             }
             catch (Exception ex)
             {
@@ -193,10 +198,14 @@ namespace Cracker_Shop.Controllers.Sales
             return Ok(nextInvoice);
         }
         [HttpGet("GetSalesEntries")]
-        public async Task<IActionResult> GetSalesEntries(int? companyId = null, int? branchId = null)
+        public async Task<IActionResult> GetSalesEntries(
+            int? companyId = null,
+            int? branchId = null,
+            string invoiceNumber = null)
         {
-            var result = await _salesRepo.GetSalesEntriesAsync(companyId, branchId);
+            var result = await _salesRepo.GetSalesEntriesAsync(companyId, branchId, invoiceNumber);
             return Ok(result);
         }
+
     }
 }

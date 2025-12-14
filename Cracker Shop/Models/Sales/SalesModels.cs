@@ -130,6 +130,11 @@
 
     }
 
+    public class InvoiceSaveResult
+    {
+        public int InvoiceID { get; set; }
+        public string InvoiceNumber { get; set; }
+    }
 
     public class ProductStockPriceDto
     {

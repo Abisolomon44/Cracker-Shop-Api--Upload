@@ -19,7 +19,8 @@ namespace Cracker_Shop.Repository
 
 
 
-        public async Task<int> AddOrUpdateSalesEntryWithStockAsync(List<SalesEntryMaster> entries)
+        public async Task<InvoiceSaveResult> AddOrUpdateSalesEntryWithStockAsync(List<SalesEntryMaster> entries)
+
         {
             if (entries == null || entries.Count == 0)
                 throw new ArgumentException("No sales entries provided.");
@@ -343,6 +344,12 @@ VALUES
                     }
 
                     tran.Commit();
+                    return new InvoiceSaveResult
+                    {
+                        InvoiceID = lastInvoiceID,
+                        InvoiceNumber = header.InvoiceNumber
+                    };
+
                 }
                 catch
                 {
@@ -351,8 +358,6 @@ VALUES
                 }
             }
 
-            return lastInvoiceID;
-            return lastInvoiceNumber;
 
 
         }
