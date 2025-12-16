@@ -11,9 +11,30 @@ namespace Cracker_Shop.Repository.IRepository
             DateTime toDate,
             int companyId,
             int? branchId,
-            string? createdBy    // ✅ FIXED
+            string? createdBy   
         );
+
+
+        Task<IEnumerable<GSTFilingModel>> GetGSTFilingAsync(
+            int companyId,
+            int? branchId,
+            string gstFileType, 
+            DateTime? fromDate,
+            DateTime? toDate
+        );
+
+        Task<IEnumerable<SalesReportCommonModel>> GetSalesReportAsync(
+            int companyId,
+            DateTime? fromDate,
+            DateTime? toDate,
+            int? branchId,
+            string reportType
+        );
+
+
+
+
     }
 
 
-}
+    }
