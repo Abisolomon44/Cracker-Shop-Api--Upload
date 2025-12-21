@@ -31,10 +31,40 @@ namespace Cracker_Shop.Repository.IRepository
             string reportType
         );
 
+        Task<IEnumerable<ProfitReportModel>> GetProfitReportAsync(
+         int companyId,
+         DateTime? fromDate,
+         DateTime? toDate,
+         int? branchId,
+         string reportType   // ITEM | INVOICE | DAY
+     );
 
+        // ===== CUSTOMER OUTSTANDING =====
+        Task<IEnumerable<CustomerOutstandingReportModel>> GetCustomerOutstandingAsync(
+            int companyId,
+            DateTime? fromDate,
+            DateTime? toDate,
+            int? branchId,
+            string reportType        // CUSTOMER | AREA | DATE
+        );
 
-
+        // ===== SUPPLIER OUTSTANDING =====
+        Task<IEnumerable<SupplierOutstandingReportModel>> GetSupplierOutstandingAsync(
+            int companyId,
+            DateTime? fromDate,
+            DateTime? toDate,
+            int? branchId,
+            string reportType        // SUPPLIER | AREA | DATE
+        );
+        Task<IEnumerable<StockReportDto>> GetStockReportAsync(
+           int companyId,
+           DateTime? fromDate,
+           DateTime? toDate,
+           int? branchId,
+           string reportType,
+           int days = 30
+       );
     }
-
+   
 
     }

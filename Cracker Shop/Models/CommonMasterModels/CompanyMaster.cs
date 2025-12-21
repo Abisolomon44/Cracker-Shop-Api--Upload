@@ -64,4 +64,44 @@
         public DateTime? FinancialYearEnd { get; set; }
         public string AccountingYear { get; set; } = string.Empty;
     }
+
+    public class RegisterRequestDto
+    {
+        public string CompanyName { get; set; } = "";
+        public string CompanyEmail { get; set; } = "";
+        public string Phone { get; set; } = "";
+
+        public string UserName { get; set; } = "";
+        public string UserEmail { get; set; } = "";
+        public string PasswordHash { get; set; } = "";
+    }
+
+    public class RegisterResultDto
+    {
+        public bool Success { get; set; }
+        public int CompanyID { get; set; }
+    }
+    public class CompanyDashboardDto
+    {
+        public decimal TotalSalesAmount { get; set; }
+        public decimal CustomerOutstandingAmount { get; set; }
+        public decimal TotalPurchaseAmount { get; set; }
+        public decimal SupplierOutstandingAmount { get; set; }
+        public decimal TotalPurchasedQuantity { get; set; }
+        public decimal TotalSoldQuantity { get; set; }
+        public decimal CurrentStockQuantity { get; set; }
+        public int CustomerCount { get; set; }
+        public int SupplierCount { get; set; }
+        public int ProductCount { get; set; }
+    }
+    public class BranchCountDto
+    {
+        public int ActiveBranchCount { get; set; }
+    }
+    public class CompanyDashboardResponseDto
+    {
+        public CompanyDashboardDto Dashboard { get; set; } = new();
+        public int ActiveBranchCount { get; set; }
+    }
+
 }

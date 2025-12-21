@@ -32,7 +32,12 @@ public interface ICompanyRepository
     Task<ModuleDto?> GetModuleByIdAsync(long moduleId);
     Task<long> SaveModuleAsync(ModuleDto module);
 
+    Task<RegisterResultDto> RegisterCompanyAsync(RegisterRequestDto request);
 
+    Task<CompanyDashboardResponseDto> GetCompanyDashboardAsync(
+           int companyId,
+           DateTime fromDate,
+           DateTime toDate
+       );
 
-
-        }
+}

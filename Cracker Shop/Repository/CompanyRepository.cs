@@ -395,5 +395,55 @@ WHERE ModuleID=@ModuleID";
                 return module.ModuleID;
             }
         }
+
+
+        public async Task<RegisterResultDto> RegisterCompanyAsync(RegisterRequestDto request)
+        {
+            var parameters = new DynamicParameters();
+
+            parameters.Add("@CompanyName", request.CompanyName);
+            parameters.Add("@CompanyEmail", request.CompanyEmail);
+            parameters.Add("@Phone", request.Phone);
+
+            parameters.Add("@UserName", request.UserName);
+            parameters.Add("@UserEmail", request.UserEmail);
+            parameters.Add("@PasswordHash", request.PasswordHash);
+
+            var result = await _db.QueryFirstAsync<RegisterResultDto>(
+                "sp_Register_Normal",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            return result;
+        }
+
+        public async Task<CompanyDashboardResponseDto> GetCompanyDashboardAsync(
+    int companyId,
+    DateTime fromDate,
+    DateTime toDate
+)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@CompanyID", companyId, DbType.Int32);
+            parameters.Add("@FromDate", fromDate.Date, DbType.Date);
+            parameters.Add("@ToDate", toDate.Date, DbType.Date);
+
+            using var multi = await _db.QueryMultipleAsync(
+                "sp_CommonDashboard_WithBranchCount",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            var dashboard = await multi.ReadFirstOrDefaultAsync<CompanyDashboardDto>();
+            var branchCount = await multi.ReadFirstOrDefaultAsync<BranchCountDto>();
+
+            return new CompanyDashboardResponseDto
+            {
+                Dashboard = dashboard ?? new CompanyDashboardDto(),
+                ActiveBranchCount = branchCount?.ActiveBranchCount ?? 0
+            };
+        }
+
     }
 }

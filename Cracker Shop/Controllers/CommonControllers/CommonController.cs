@@ -14,6 +14,88 @@ namespace Cracker_Shop.Controllers.CommonControllers
         {
             _repo = repo;
         }
+
+
+        [HttpPost("register")]
+        public async Task<IActionResult> RegisterCompany([FromBody] RegisterRequestDto request)
+        {
+            if (request == null)
+                return BadRequest("Registration data is required.");
+
+            // ================= REQUIRED VALIDATIONS =================
+            if (string.IsNullOrWhiteSpace(request.CompanyName))
+                return BadRequest("CompanyName is required.");
+
+            if (string.IsNullOrWhiteSpace(request.UserName))
+                return BadRequest("UserName is required.");
+
+            if (string.IsNullOrWhiteSpace(request.PasswordHash))
+                return BadRequest("Password is required.");
+
+            // ================= OPTIONAL FIELDS NORMALIZATION =================
+            request.CompanyEmail = string.IsNullOrWhiteSpace(request.CompanyEmail)
+                ? null
+                : request.CompanyEmail;
+
+            request.UserEmail = string.IsNullOrWhiteSpace(request.UserEmail)
+                ? null
+                : request.UserEmail;
+
+            request.Phone = string.IsNullOrWhiteSpace(request.Phone)
+                ? null
+                : request.Phone;
+
+            try
+            {
+                var result = await _repo.RegisterCompanyAsync(request);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet("CommonDashboard")]
+        public async Task<IActionResult> GetCompanyDashboard(
+          [FromQuery] int companyId,
+          [FromQuery] DateTime? fromDate = null,
+          [FromQuery] DateTime? toDate = null
+      )
+        {
+            if (companyId <= 0)
+                return BadRequest("CompanyID is required.");
+
+            try
+            {
+                DateTime from = fromDate ?? new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+                DateTime to = toDate ?? DateTime.Today;
+
+                var result = await _repo.GetCompanyDashboardAsync(
+                    companyId,
+                    from,
+                    to
+                );
+
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "Internal server error occurred.");
+            }
+        }
+
+
+
+
+
+
+
+
         [HttpPost("PostCompanyMaster")]
         public async Task<IActionResult> SaveCompany([FromBody] CompanyMaster company)
         {

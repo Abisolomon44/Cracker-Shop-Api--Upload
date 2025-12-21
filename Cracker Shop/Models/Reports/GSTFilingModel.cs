@@ -73,4 +73,26 @@
 
         public string? Area { get; set; } // CustomerState alias
     }
+
+    public class ProfitReportModel
+    {
+        // ITEM-wise
+        public string? ProductCode { get; set; }
+        public string? ProductName { get; set; }
+
+        // INVOICE-wise
+        public string? InvoiceNumber { get; set; }
+        public DateTime? InvoiceDate { get; set; }
+        public string? CustomerName { get; set; }
+
+        // DAY-wise
+        public DateTime? SaleDate { get; set; }
+
+        // COMMON
+        public decimal SoldQty { get; set; }
+        public decimal AvgPurchaseRate { get; set; }   // Only ITEM-wise
+        public decimal CostAmount { get; set; }
+        public decimal SalesAmount { get; set; }
+        public decimal ProfitAmount { get; set; }
+    }
 }

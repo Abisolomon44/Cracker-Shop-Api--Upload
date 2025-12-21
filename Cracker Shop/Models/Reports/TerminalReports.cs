@@ -48,6 +48,27 @@
         public decimal CESS { get; set; }
         public decimal TotalGST { get; set; }
     }
+    public class StockReportDto
+    {
+        public string ProductCode { get; set; }
+        public string ProductName { get; set; }
 
+        // ===== STOCK =====
+        public decimal? CurrentStock { get; set; }
+        public decimal? ReorderLevel { get; set; }
+
+        // ===== RATE / VALUE =====
+        public decimal? PurchaseRate { get; set; }
+        public decimal? SaleRate { get; set; }
+        public decimal? StockValue { get; set; }
+
+        // ===== FAST / SLOW =====
+        public decimal? SoldQty { get; set; }
+
+        // ===== LEDGER =====
+        public string TxnType { get; set; }     // OPENING | PURCHASE | SALE
+        public decimal? Quantity { get; set; }
+        public DateTime? TxnDate { get; set; }
+    }
 
 }
